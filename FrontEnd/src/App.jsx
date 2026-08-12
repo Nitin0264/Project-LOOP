@@ -1,12 +1,20 @@
 import React from 'react'
+import { Route, Routes } from 'react-router-dom'
+import WelcomePage from './Pages/WelcomePage'
+import InfoPage from './Pages/InfoPage'
+import LoginPage from './Pages/LoginPage'
+import Navbar from './Componenets/Navbar'
 
 function App() {
   return (
-    <div className='app flex flex-col items-center justify-center text-center gap-4'>
-      <h1>Project LOOP</h1>
-      <h3>AI-Powered Customer FeedBack Intelligence Plateform</h3>
-      <p>Building D-1</p>
-    </div>
+    <>
+    <Navbar />
+    <Routes>
+      <Route path = '/' element = {<WelcomePage />}/>
+      <Route path = '/info' element = {<InfoPage />} />
+      <Route path = '/login' element = {<LoginPage />} />
+    </Routes>
+    </>
   )
 }
 
