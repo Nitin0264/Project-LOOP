@@ -1,7 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 
-function LoginPage() {
+function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
 
@@ -10,12 +10,30 @@ function LoginPage() {
         {/* Heading */}
         <div className="text-center">
           <h1 className="text-3xl font-bold text-white">
-            Welcome Back
+            Create Your Account
           </h1>
 
           <p className="mt-2 text-gray-400">
-            Login to Project LOOP
+            Join Project LOOP
           </p>
+        </div>
+
+        {/* Full Name */}
+        <div className="flex flex-col gap-2">
+          <label
+            htmlFor="name"
+            className="text-sm font-medium text-white"
+          >
+            Full Name
+          </label>
+
+          <input
+            id="name"
+            name="name"
+            type="text"
+            placeholder="Enter your full name"
+            className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-transparent text-white outline-none focus:border-blue-500"
+          />
         </div>
 
         {/* Email */}
@@ -49,27 +67,45 @@ function LoginPage() {
             id="password"
             name="password"
             type="password"
-            placeholder="Enter your password"
+            placeholder="Create a password"
             className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-transparent text-white outline-none focus:border-blue-500"
           />
         </div>
 
-        {/* Sign In */}
+        {/* Confirm Password */}
+        <div className="flex flex-col gap-2">
+          <label
+            htmlFor="confirmPassword"
+            className="text-sm font-medium text-white"
+          >
+            Confirm Password
+          </label>
+
+          <input
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            placeholder="Confirm your password"
+            className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-transparent text-white outline-none focus:border-blue-500"
+          />
+        </div>
+
+        {/* Create Account */}
         <button
           type="submit"
           className="w-full py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition"
         >
-          Sign In
+          Create Account
         </button>
 
-        {/* Register */}
+        {/* Login */}
         <p className="text-center text-gray-400">
-          Don't have an account?{' '}
+          Already have an account?{' '}
           <Link
-            to="/register"
+            to="/login"
             className="text-blue-400 hover:text-blue-300"
           >
-            Create Account
+            Sign In
           </Link>
         </p>
 
@@ -78,4 +114,4 @@ function LoginPage() {
   )
 }
 
-export default LoginPage
+export default RegisterPage

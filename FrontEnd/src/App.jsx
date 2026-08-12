@@ -4,6 +4,7 @@ import WelcomePage from './Pages/WelcomePage'
 import InfoPage from './Pages/InfoPage'
 import LoginPage from './Pages/LoginPage'
 import Navbar from './Componenets/Navbar'
+import RegisterPage from './Pages/RegisterPage'
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
       <Route path = '/' element = {<WelcomePage />}/>
       <Route path = '/info' element = {<InfoPage />} />
       <Route path = '/login' element = {<LoginPage />} />
+      <Route path='/register' element = {<RegisterPage />} />
     </Routes>
     </>
   )
