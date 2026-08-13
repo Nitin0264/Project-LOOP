@@ -1,11 +1,50 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 
 function RegisterPage() {
+
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  })
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    })
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    try {
+      const response = await fetch('http://localhost:5000/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      })
+
+      const data = await response.json()
+
+      console.log(data)
+
+    } catch (error) {
+      console.error('Registration failed:', error)
+    }
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
 
-      <form className="w-full max-w-md flex flex-col gap-5 p-8 rounded-xl border border-gray-700">
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-md flex flex-col gap-5 p-8 rounded-xl border border-gray-700"
+      >
 
         {/* Heading */}
         <div className="text-center">
@@ -31,6 +70,8 @@ function RegisterPage() {
             id="name"
             name="name"
             type="text"
+            value={formData.name}
+            onChange={handleChange}
             placeholder="Enter your full name"
             className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-transparent text-white outline-none focus:border-blue-500"
           />
@@ -49,6 +90,8 @@ function RegisterPage() {
             id="email"
             name="email"
             type="email"
+            value={formData.email}
+            onChange={handleChange}
             placeholder="Enter your email"
             className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-transparent text-white outline-none focus:border-blue-500"
           />
@@ -67,6 +110,8 @@ function RegisterPage() {
             id="password"
             name="password"
             type="password"
+            value={formData.password}
+            onChange={handleChange}
             placeholder="Create a password"
             className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-transparent text-white outline-none focus:border-blue-500"
           />
@@ -85,6 +130,8 @@ function RegisterPage() {
             id="confirmPassword"
             name="confirmPassword"
             type="password"
+            value={formData.confirmPassword}
+            onChange={handleChange}
             placeholder="Confirm your password"
             className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-transparent text-white outline-none focus:border-blue-500"
           />
