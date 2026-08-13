@@ -1,16 +1,133 @@
-# React + Vite
+# LOOP — Final Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Production-style frontend for **LOOP — AI Customer Feedback Intelligence Platform**.
 
-Currently, two official plugins are available:
+This frontend follows the feature surfaces in the Zidio Project LOOP brief:
+- Authentication / workspace entry
+- Role-aware workspace UI (Admin / Analyst / Viewer)
+- Feedback ingestion and inbox
+- Search/filter/status workflow
+- Dashboard analytics
+- Theme clustering / trends
+- Grounded Ask LOOP UI
+- Voice-of-Customer reports
+- Responsive UI
+- Empty/loading/error-ready states
+- Backend API integration layer
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Run in VS Code
 
-## React Compiler
+### Option A — easiest
+1. Open this folder in VS Code.
+2. Install **Live Server**.
+3. Right-click `index.html`.
+4. Select **Open with Live Server**.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Option B — Python local server
+From the project folder:
+```bash
+python -m http.server 5500
+```
+Open:
+`http://localhost:5500`
 
-## Expanding the Oxlint configuration
+## Project structure
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+```text
+LOOP-Frontend-Final/
+├── index.html
+├── README.md
+├── assets/
+│   ├── style.css
+│   ├── app.js
+│   ├── data.js
+│   └── api.js
+└── pages/
+    ├── dashboard.html
+    ├── inbox.html
+    ├── trends.html
+    ├── ask.html
+    ├── reports.html
+    └── settings.html
+```
+
+## Backend handoff
+
+The frontend has a central API client in `assets/api.js`.
+
+Suggested backend routes to connect:
+
+```text
+POST   /api/auth/login
+POST   /api/auth/logout
+GET    /api/me
+
+GET    /api/feedback
+POST   /api/feedback
+POST   /api/feedback/import
+PATCH  /api/feedback/:id
+
+GET    /api/themes
+GET    /api/themes/trends
+
+POST   /api/insights/ask
+
+POST   /api/reports
+GET    /api/reports
+GET    /api/reports/:id
+
+GET    /api/workspace
+GET    /api/workspace/members
+POST   /api/workspace/members
+PATCH  /api/workspace/members/:id
+```
+
+Change the API URL from **Settings → API connection**, or set:
+
+```js
+localStorage.setItem("LOOP_API_BASE_URL", "http://localhost:3000/api");
+```
+
+## Important architecture rule
+
+The browser should call only your own API. The backend should:
+1. authenticate the session;
+2. verify the user's role;
+3. scope every query to the authenticated `workspaceId`;
+4. talk to PostgreSQL/Prisma;
+5. call Claude only from the server;
+6. perform retrieval before Ask LOOP answers;
+7. return clean JSON to the frontend.
+
+Never put `ANTHROPIC_API_KEY`, database credentials or authentication secrets in frontend files.
+
+## Data
+
+`assets/data.js` contains a small **seed-style frontend dataset** so the screens are fully populated while backend development is in progress. It is not intended to replace the PostgreSQL backend.
+
+When the API is ready, replace page-level `LOOP_DATA` reads with API calls and keep the UI unchanged.
+
+## Git workflow
+
+Recommended:
+```bash
+git checkout -b feat/loop-frontend
+git add .
+git commit -m "feat: build LOOP customer intelligence frontend"
+git push -u origin feat/loop-frontend
+```
+
+Then open a pull request into your team's main branch.
+
+## Before submission
+
+- Connect all API endpoints.
+- Remove unused seed-data fallbacks if the team requires a backend-only data source.
+- Test Admin / Analyst / Viewer permissions with real backend enforcement.
+- Test CSV validation and feedback pagination.
+- Test Ask LOOP grounding and source citations.
+- Test VoC generation and export.
+- Test loading, empty and error states.
+- Run accessibility and responsive checks.
+- Deploy frontend + backend.
+- Prepare README, demo video and screenshots.
