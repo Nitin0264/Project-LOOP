@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom'
 
 function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-gray-950">
 
-      <form className="w-full max-w-md flex flex-col gap-5 p-8 rounded-xl border border-gray-700">
+      <form className="w-full max-w-md flex flex-col gap-5 p-8 rounded-xl border border-gray-700 bg-gray-900">
 
         {/* Heading */}
         <div className="text-center">
@@ -78,4 +78,4 @@ function LoginPage() {
   )
 }
 
-export default LoginPage
+export default LoginPage;

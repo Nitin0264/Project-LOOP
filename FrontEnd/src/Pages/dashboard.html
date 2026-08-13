@@ -1,0 +1,34 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LOOP — Dashboard</title><link rel="stylesheet" href="../assets/style.css"></head><body>
+<script src="../assets/data.js"></script><script src="../assets/api.js"></script><script src="../assets/app.js"></script><script>document.write(shell("Dashboard","Dashboard"))</script>
+<script>
+const c=document.querySelector(".content");
+const themeRows=LOOP_DATA.themes.map((t,i)=>`<div class="theme-item"><div class="theme-main"><div class="theme-name"><span class="rank">${i+1}</span>${t.name}</div><span class="theme-count">${t.count}</span></div><div class="theme-sub"><span>${t.description}</span><span class="${t.change>20?'negative-text':'positive-text'}">${t.change>0?"+":""}${t.change}%</span></div><div class="theme-meter"><i style="width:${Math.max(25,100-i*14)}%"></i></div></div>`).join("");
+const recent=LOOP_DATA.feedback.slice(0,6).map(f=>`<tr><td><div class="feedback-cell"><div class="feedback-title">${esc(f.text)}</div><div class="feedback-meta">${f.id} · ${f.channel} · ${f.date}</div></div></td><td>${sentimentBadge(f.sentiment)}</td><td>${statusBadge(f.status)}</td></tr>`).join("");
+c.innerHTML=`
+<div class="page-head"><div><div class="eyebrow">OVERVIEW</div><h1>Customer feedback, at a glance.</h1><p>See what is changing across your customer experience and where the team should focus next.</p></div><div class="actions"><button class="btn" data-toast="Dashboard export queued">${icon("download")} Export</button><a class="btn btn-primary" href="inbox.html">${icon("plus")} Add feedback</a></div></div>
+<div class="grid stats">
+ <div class="card stat-card"><div class="stat-top"><span class="stat-label">TOTAL FEEDBACK</span><div class="stat-icon">${icon("inbox")}</div></div><div class="stat-value">1,284</div><div class="stat-meta"><span class="positive-text">↑ 12.8%</span> vs previous 30 days</div></div>
+ <div class="card stat-card"><div class="stat-top"><span class="stat-label">NEGATIVE</span><div class="stat-icon" style="color:var(--red);background:var(--red-soft)">!</div></div><div class="stat-value">18.4%</div><div class="stat-meta"><span class="negative-text">↑ 3.2 pts</span> this period</div></div>
+ <div class="card stat-card"><div class="stat-top"><span class="stat-label">NEW THIS WEEK</span><div class="stat-icon" style="color:var(--blue);background:var(--blue-soft)">+</div></div><div class="stat-value">147</div><div class="stat-meta"><span class="positive-text">↑ 9.4%</span> from last week</div></div>
+ <div class="card stat-card"><div class="stat-top"><span class="stat-label">FASTEST GROWING THEME</span><div class="stat-icon">${icon("trends")}</div></div><div class="stat-value text">Onboarding</div><div class="stat-meta"><span class="negative-text">+28%</span> · 243 mentions</div></div>
+</div>
+<div class="grid two-col">
+ <div class="card"><div class="card-head"><div><h2>Feedback volume</h2><p>Daily volume · last 30 days</p></div><select class="select"><option>Last 30 days</option><option>Last 7 days</option><option>Last 90 days</option></select></div><div class="card-body"><div class="chart-area"><div class="grid-lines"><i></i><i></i><i></i><i></i><i></i></div><div class="bars" id="bars"></div><div class="x-labels"><span>Jul 14</span><span>Jul 21</span><span>Jul 28</span><span>Aug 4</span><span>Aug 11</span></div></div><div class="chart-legend"><span><i class="legend-dot"></i>Feedback items</span></div></div></div>
+ <div class="card"><div class="card-head"><div><h2>Sentiment breakdown</h2><p>All feedback · current period</p></div><a class="head-link" href="trends.html">View trends →</a></div><div class="card-body"><div class="donut-layout"><div class="donut"><div class="donut-center"><strong>1.28k</strong><span>items</span></div></div><div class="sentiments">
+  <div><div class="sent-row-top"><span class="sent-name"><i class="legend-dot" style="background:var(--green)"></i>Positive</span><span class="sent-value">56%</span></div><div class="progress"><i style="width:56%;background:var(--green)"></i></div></div>
+  <div><div class="sent-row-top"><span class="sent-name"><i class="legend-dot" style="background:#b4bdca"></i>Neutral</span><span class="sent-value">18%</span></div><div class="progress"><i style="width:18%;background:#b4bdca"></i></div></div>
+  <div><div class="sent-row-top"><span class="sent-name"><i class="legend-dot" style="background:var(--red)"></i>Negative</span><span class="sent-value">26%</span></div><div class="progress"><i style="width:26%;background:var(--red)"></i></div></div>
+ </div></div></div></div>
+</div>
+<div class="grid two-col" style="margin-top:16px">
+ <div class="card"><div class="card-head"><div><h2>Top themes</h2><p>Ranked by feedback volume and movement</p></div><a class="head-link" href="trends.html">Explore all →</a></div><div class="card-body"><div class="theme-list">${themeRows}</div></div></div>
+ <div class="card"><div class="card-head"><div><h2>Recent feedback</h2><p>Latest incoming items</p></div><a class="head-link" href="inbox.html">Open inbox →</a></div><div class="table-wrap"><table class="table"><thead><tr><th>Feedback</th><th>Sentiment</th><th>Status</th></tr></thead><tbody>${recent}</tbody></table></div></div>
+</div>
+<div class="card" style="margin-top:16px"><div class="card-head"><div><h2>What needs attention</h2><p>Signals detected from current feedback</p></div><a class="head-link" href="ask.html">Ask LOOP →</a></div><div class="card-body"><div class="insight-grid">
+ <div class="insight"><div class="insight-label">Priority 01</div><strong>Onboarding friction is rising</strong>Mentions are up 28%, with team invitations and setup clarity appearing most often in negative feedback.</div>
+ <div class="insight"><div class="insight-label">Priority 02</div><strong>Enterprise SSO demand is accelerating</strong>SSO requests are up 31% and are appearing repeatedly in sales conversations.</div>
+ <div class="insight"><div class="insight-label">Positive signal</div><strong>Performance sentiment improved</strong>Customers are responding positively to the latest dashboard speed improvements.</div>
+ </div></div></div>`;
+const vals=[54,62,58,73,67,91,78,85,69,88,101,95,110,87,116,105,123,113,127,118,132,121,144,126,138,151,133,148,158,147];
+document.querySelector("#bars").innerHTML=vals.map(v=>`<div class="bar-col"><div class="bar" style="height:${(v/170)*100}%"></div></div>`).join("");
+</script></body></html>
