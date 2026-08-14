@@ -1,67 +1,137 @@
 const express = require("express");
-const Feedback = require("../models/feedback");
+const Feedback = require("../models/Feedback");
 
+const {
+  analyzeFeedbackWithAI,
+} = require("../services/aiService");
 
 const router = express.Router();
 
 
-// POST - Create new feedback
+// =====================================================
+// CREATE FEEDBACK + AI ANALYSIS
+// =====================================================
+
 router.post("/", async (req, res) => {
   try {
-
     const {
       customerName,
       customerEmail,
-      source,
       message,
+      source,
     } = req.body;
 
 
-    // Check required fields
-    if (
-      !customerName ||
-      !customerEmail ||
-      !source ||
-      !message
-    ) {
+    // ---------------------------------------------
+    // Validate required fields
+    // ---------------------------------------------
+
+    if (!customerName || !message) {
       return res.status(400).json({
-        message: "All fields are required",
+        message:
+          "Customer name and feedback message are required",
       });
     }
 
 
-    // Create feedback
-    const newFeedback = new Feedback({
+    // ---------------------------------------------
+    // Send feedback to Gemini
+    // ---------------------------------------------
+
+    console.log(
+      "Analyzing feedback with Gemini..."
+    );
+
+    const aiAnalysis =
+      await analyzeFeedbackWithAI(message);
+
+
+    // ---------------------------------------------
+    // Create feedback document
+    // ---------------------------------------------
+
+    const feedback = new Feedback({
+
       customerName,
+
       customerEmail,
-      source,
+
       message,
+
+      source: source || "manual",
+
+      sentiment:
+        aiAnalysis.sentiment,
+
+      themes:
+        aiAnalysis.themes,
+
+      summary:
+        aiAnalysis.summary,
+
+      keyIssue:
+        aiAnalysis.keyIssue,
+
+      recommendation:
+        aiAnalysis.recommendation,
     });
 
 
+    // ---------------------------------------------
     // Save to MongoDB
-    const savedFeedback = await newFeedback.save();
+    // ---------------------------------------------
 
+    const savedFeedback =
+      await feedback.save();
+
+
+    // ---------------------------------------------
+    // Send response
+    // ---------------------------------------------
 
     res.status(201).json({
-      message: "Feedback created successfully",
-      feedback: savedFeedback,
+
+      message:
+        "Feedback submitted and analyzed successfully",
+
+      feedback:
+        savedFeedback,
+
     });
 
   } catch (error) {
 
-    console.error("Feedback creation error:", error);
+    console.error(
+      "Feedback creation error:",
+      error
+    );
 
     res.status(500).json({
-      message: "Server error while creating feedback",
-    });
 
+      message:
+        "Failed to create feedback",
+
+      error:
+        error.message,
+
+    });
   }
 });
-// GET - Get all feedback
+
+
+// =====================================================
+// GET ALL FEEDBACK
+// =====================================================
+
 router.get("/", async (req, res) => {
   try {
-    const feedbacks = await Feedback.find().sort({ createdAt: -1 });
+
+    const feedbacks =
+      await Feedback.find()
+        .sort({
+          createdAt: -1,
+        });
+
 
     res.status(200).json({
       feedbacks,
@@ -69,41 +139,220 @@ router.get("/", async (req, res) => {
 
   } catch (error) {
 
-    console.error("Error fetching feedback:", error);
-
-    res.status(500).json({
-      message: "Server error while fetching feedback",
-    });
-
-  }
-});
-// DELETE - Delete feedback
-router.delete("/:id", async (req, res) => {
-  try {
-
-    const deletedFeedback = await Feedback.findByIdAndDelete(
-      req.params.id
+    console.error(
+      "Get feedback error:",
+      error
     );
 
-    if (!deletedFeedback) {
+    res.status(500).json({
+      message:
+        "Failed to fetch feedback",
+    });
+  }
+});
+
+
+// =====================================================
+// GET SINGLE FEEDBACK
+// =====================================================
+
+router.get("/:id", async (req, res) => {
+  try {
+
+    const feedback =
+      await Feedback.findById(
+        req.params.id
+      );
+
+
+    if (!feedback) {
       return res.status(404).json({
-        message: "Feedback not found",
+        message:
+          "Feedback not found",
       });
     }
 
+
     res.status(200).json({
-      message: "Feedback deleted successfully",
+      feedback,
     });
 
   } catch (error) {
 
-    console.error("Feedback deletion error:", error);
+    console.error(
+      "Get single feedback error:",
+      error
+    );
 
     res.status(500).json({
-      message: "Server error while deleting feedback",
+      message:
+        "Failed to fetch feedback",
     });
-
   }
 });
+
+
+// =====================================================
+// UPDATE FEEDBACK
+// =====================================================
+
+router.put("/:id", async (req, res) => {
+  try {
+
+    const {
+      customerName,
+      customerEmail,
+      message,
+      source,
+    } = req.body;
+
+
+    const feedback =
+      await Feedback.findById(
+        req.params.id
+      );
+
+
+    if (!feedback) {
+      return res.status(404).json({
+        message:
+          "Feedback not found",
+      });
+    }
+
+
+    // ---------------------------------------------
+    // If message changes, analyze it again
+    // ---------------------------------------------
+
+    if (
+      message &&
+      message !== feedback.message
+    ) {
+
+      console.log(
+        "Re-analyzing updated feedback..."
+      );
+
+
+      const aiAnalysis =
+        await analyzeFeedbackWithAI(
+          message
+        );
+
+
+      feedback.sentiment =
+        aiAnalysis.sentiment;
+
+      feedback.themes =
+        aiAnalysis.themes;
+
+      feedback.summary =
+        aiAnalysis.summary;
+
+      feedback.keyIssue =
+        aiAnalysis.keyIssue;
+
+      feedback.recommendation =
+        aiAnalysis.recommendation;
+
+      feedback.message =
+        message;
+    }
+
+
+    // ---------------------------------------------
+    // Update normal fields
+    // ---------------------------------------------
+
+    if (customerName) {
+      feedback.customerName =
+        customerName;
+    }
+
+    if (customerEmail) {
+      feedback.customerEmail =
+        customerEmail;
+    }
+
+    if (source) {
+      feedback.source =
+        source;
+    }
+
+
+    const updatedFeedback =
+      await feedback.save();
+
+
+    res.status(200).json({
+
+      message:
+        "Feedback updated successfully",
+
+      feedback:
+        updatedFeedback,
+
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Update feedback error:",
+      error
+    );
+
+    res.status(500).json({
+      message:
+        "Failed to update feedback",
+      error:
+        error.message,
+    });
+  }
+});
+
+
+// =====================================================
+// DELETE FEEDBACK
+// =====================================================
+
+router.delete("/:id", async (req, res) => {
+  try {
+
+    const deletedFeedback =
+      await Feedback.findByIdAndDelete(
+        req.params.id
+      );
+
+
+    if (!deletedFeedback) {
+      return res.status(404).json({
+        message:
+          "Feedback not found",
+      });
+    }
+
+
+    res.status(200).json({
+
+      message:
+        "Feedback deleted successfully",
+
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Delete feedback error:",
+      error
+    );
+
+    res.status(500).json({
+      message:
+        "Failed to delete feedback",
+    });
+  }
+});
+
 
 module.exports = router;
