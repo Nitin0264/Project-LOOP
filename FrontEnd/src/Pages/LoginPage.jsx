@@ -3,79 +3,89 @@ import { Link } from 'react-router-dom'
 
 function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-gray-950">
+    <div className="min-h-screen flex items-center justify-center px-4">
 
-      <form className="w-full max-w-md flex flex-col gap-5 p-8 rounded-xl border border-gray-700 bg-gray-900">
+      <div className="w-full max-w-md">
 
-        {/* Heading */}
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-white">
+        <div className="text-center mb-8">
+
+          <h1 className="text-4xl font-bold text-white">
             Welcome Back
           </h1>
 
           <p className="mt-2 text-gray-400">
             Login to Project LOOP
           </p>
+
         </div>
 
-        {/* Email */}
-        <div className="flex flex-col gap-2">
-          <label
-            htmlFor="email"
-            className="text-sm font-medium text-white"
+        <form className="flex flex-col gap-5">
+
+          {/* Email */}
+          <div className="flex flex-col gap-2">
+
+            <label
+              htmlFor="email"
+              className="text-white font-medium"
+            >
+              Email
+            </label>
+
+            <input
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              className="px-4 py-3 rounded-lg bg-gray-900 border border-gray-700 text-white outline-none focus:border-blue-500"
+            />
+
+          </div>
+
+          {/* Password */}
+          <div className="flex flex-col gap-2">
+
+            <label
+              htmlFor="password"
+              className="text-white font-medium"
+            >
+              Password
+            </label>
+
+            <input
+              id="password"
+              type="password"
+              placeholder="Enter your password"
+              className="px-4 py-3 rounded-lg bg-gray-900 border border-gray-700 text-white outline-none focus:border-blue-500"
+            />
+
+          </div>
+
+          {/* Button */}
+          <button
+            type="submit"
+            className="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
           >
-            Email
-          </label>
+            Sign In
+          </button>
 
-          <input
-            id="email"
-            name="email"
-            type="email"
-            placeholder="Enter your email"
-            className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-transparent text-white outline-none focus:border-blue-500"
-          />
-        </div>
+          <p className="text-center text-gray-400">
 
-        {/* Password */}
-        <div className="flex flex-col gap-2">
-          <label
-            htmlFor="password"
-            className="text-sm font-medium text-white"
-          >
-            Password
-          </label>
+            Don't have an account?{' '}
 
-          <input
-            id="password"
-            name="password"
-            type="password"
-            placeholder="Enter your password"
-            className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-transparent text-white outline-none focus:border-blue-500"
-          />
-        </div>
+            <Link
+              to="/register"
+              className="text-blue-400 hover:text-blue-300"
+            >
+              Create Account
+            </Link>
 
-        {/* Sign In */}
-        <button
-          type="submit"
-          className="w-full py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition"
-        >
-          Sign In
-        </button>
+          </p>
 
-        {/* Register */}
-        <p className="text-center text-gray-400">
-          Don't have an account?{' '}
-          <Link
-            to="/register"
-            className="text-blue-400 hover:text-blue-300"
-          >
-            Create Account
-          </Link>
-        </p>
+        </form>
 
-      </form>
+      </div>
+
     </div>
   )
 }
 
-export default LoginPage;
+export default LoginPage
