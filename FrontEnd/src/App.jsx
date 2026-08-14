@@ -1,22 +1,31 @@
-import React from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import React from 'react'
+import { Routes, Route } from 'react-router-dom'
 
-import WelcomePage from "./Pages/WelcomePage";
-import HomePage from "./Pages/HomePage";
-import LoginPage from "./Pages/LoginPage";
-import RegisterPage from "./Pages/RegisterPage";
+import Navbar from './Components/Navbar'
+
+import WelcomePage from './Pages/WelcomePage'
+import LoginPage from './Pages/LoginPage'
+import RegisterPage from './Pages/RegisterPage'
+import InfoPage from './Pages/InfoPage'
 
 function App() {
   return (
-    <BrowserRouter>
+    <>
+      <Navbar />
+
       <Routes>
+
         <Route path="/" element={<WelcomePage />} />
-        <Route path="/home" element={<HomePage />} />
+
         <Route path="/login" element={<LoginPage />} />
+
         <Route path="/register" element={<RegisterPage />} />
+
+        <Route path="/info" element={<InfoPage />} />
+
       </Routes>
-    </BrowserRouter>
-  );
+    </>
+  )
 }
 
-export default App;
+export default App
