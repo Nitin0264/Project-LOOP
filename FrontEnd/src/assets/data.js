@@ -23,3 +23,13 @@ window.LOOP_DATA = {
     {name:"SSO",count:81,change:31,sentiment:"negative",description:"Enterprise identity and authentication"}
   ]
 };
+
+
+
+
+
+
+
+
+
+
