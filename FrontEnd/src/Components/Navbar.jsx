@@ -9,7 +9,7 @@ function Navbar() {
         {/* Logo */}
         <div>
           <Link
-            className="text-xl font-semibold text-white hover:text-gray-300"
+            className="text-xl font-semibold text-blue-600 hover:text-blue-300"
             to="/"
           >
             Project LOOP
@@ -20,35 +20,35 @@ function Navbar() {
         <div className="flex gap-5 items-center">
 
           <Link
-            className="text-xl font-semibold text-white hover:text-gray-300"
+            className="text-xl font-semibold text-blue-600 hover:text-blue-300"
             to="/"
           >
             Home
           </Link>
 
           <Link
-            className="text-xl font-semibold text-white hover:text-gray-300"
+            className="text-xl font-semibold text-blue-600 hover:text-blue-300"
             to="/info"
           >
             Features
           </Link>
 
           <Link
-            className="text-xl font-semibold text-white hover:text-gray-300"
+            className="text-xl font-semibold text-blue-600 hover:text-blue-300"
             to="/info"
           >
             About
           </Link>
 
           <Link
-            className="text-xl font-semibold text-white hover:text-gray-300"
+            className="text-xl font-semibold text-blue-600 hover:text-blue-300"
             to="/info"
           >
             Contact
           </Link>
 
           <Link
-            className="text-xl font-semibold text-white hover:text-gray-300"
+            className="text-xl font-semibold text-blue-600 hover:text-blue-300"
             to="/login"
           >
             Sign In

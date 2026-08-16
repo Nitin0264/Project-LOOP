@@ -22,8 +22,7 @@ function RegisterPage() {
 
     try {
 
-      const response = await fetch(
-        'http://localhost:5000/auth/register',
+      const response = await fetch( `${import.meta.env.VITE_baseUrl}/register`,
         {
           method: 'POST',
 
@@ -72,7 +71,7 @@ function RegisterPage() {
 
           <label
             htmlFor="name"
-            className="text-white font-medium"
+            className="text-black font-medium"
           >
             Full Name
           </label>
@@ -84,7 +83,7 @@ function RegisterPage() {
             value={formData.name}
             onChange={handleChange}
             placeholder="Enter your full name"
-            className="px-4 py-3 rounded-lg bg-gray-900 border border-gray-700 text-white outline-none focus:border-blue-500"
+            className="px-4 py-3 rounded-lg bg-gray-200 border border-gray-700 text-black outline-none focus:border-blue-500"
           />
 
         </div>
@@ -94,7 +93,7 @@ function RegisterPage() {
 
           <label
             htmlFor="email"
-            className="text-white font-medium"
+            className="text-black font-medium"
           >
             Email
           </label>
@@ -106,7 +105,7 @@ function RegisterPage() {
             value={formData.email}
             onChange={handleChange}
             placeholder="Enter your email"
-            className="px-4 py-3 rounded-lg bg-gray-900 border border-gray-700 text-white outline-none focus:border-blue-500"
+            className="px-4 py-3 rounded-lg bg-gray-200 border border-gray-700  text-black outline-none focus:border-blue-500"
           />
 
         </div>
@@ -116,7 +115,7 @@ function RegisterPage() {
 
           <label
             htmlFor="password"
-            className="text-white font-medium"
+            className="text-black font-medium"
           >
             Password
           </label>
@@ -128,7 +127,7 @@ function RegisterPage() {
             value={formData.password}
             onChange={handleChange}
             placeholder="Create a password"
-            className="px-4 py-3 rounded-lg bg-gray-900 border border-gray-700 text-white outline-none focus:border-blue-500"
+            className="px-4 py-3 rounded-lg bg-gray-200 border border-gray-700 text-black border border-gray-700  outline-none focus:border-blue-500"
           />
 
         </div>
@@ -138,7 +137,7 @@ function RegisterPage() {
 
           <label
             htmlFor="confirmPassword"
-            className="text-white font-medium"
+            className="text-black font-medium"
           >
             Confirm Password
           </label>
@@ -150,7 +149,7 @@ function RegisterPage() {
             value={formData.confirmPassword}
             onChange={handleChange}
             placeholder="Confirm your password"
-            className="px-4 py-3 rounded-lg bg-gray-900 border border-gray-700 text-white outline-none focus:border-blue-500"
+            className="px-4 py-3 rounded-lg bg-gray-200 border border-gray-700 text-black border border-gray-700  outline-none focus:border-blue-500"
           />
 
         </div>

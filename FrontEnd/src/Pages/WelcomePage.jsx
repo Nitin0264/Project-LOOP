@@ -5,7 +5,7 @@ function WelcomePage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center text-center px-6">
 
-      <h1 className="text-5xl font-bold text-white">
+      <h1 className="text-5xl font-bold text-blue-300">
         PROJECT LOOP
       </h1>
 
@@ -26,7 +26,7 @@ function WelcomePage() {
 
         <Link
           to="/info"
-          className="px-6 py-3 border border-gray-600 text-white rounded-lg font-semibold hover:bg-gray-800"
+          className="px-6 py-3 border border-gray-600 text-blue-600 rounded-lg font-semibold hover:bg-gray-800 hover:text-white"
         >
           Learn More
         </Link>
