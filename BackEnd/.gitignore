@@ -1,8 +1,2 @@
-<<<<<<< HEAD
-node_modules
-=======
-node_modules
 .env
 node_modules/
-dist/
->>>>>>> b39ee00ec1fd0d43d0c64b05af8b458df27a7ba5
