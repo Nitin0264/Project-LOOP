@@ -156,40 +156,40 @@ router.get("/", async (req, res) => {
 // GET SINGLE FEEDBACK
 // =====================================================
 
-router.get("/:id", async (req, res) => {
-  try {
+// router.get("/:id", async (req, res) => {
+//   try {
 
-    const feedback =
-      await Feedback.findById(
-        req.params.id
-      );
-
-
-    if (!feedback) {
-      return res.status(404).json({
-        message:
-          "Feedback not found",
-      });
-    }
+//     const feedback =
+//       await Feedback.findById(
+//         req.params.id
+//       );
 
 
-    res.status(200).json({
-      feedback,
-    });
+//     if (!feedback) {
+//       return res.status(404).json({
+//         message:
+//           "Feedback not found",
+//       });
+//     }
 
-  } catch (error) {
 
-    console.error(
-      "Get single feedback error:",
-      error
-    );
+//     res.status(200).json({
+//       feedback,
+//     });
 
-    res.status(500).json({
-      message:
-        "Failed to fetch feedback",
-    });
-  }
-});
+//   } catch (error) {
+
+//     console.error(
+//       "Get single feedback error:",
+//       error
+//     );
+
+//     res.status(500).json({
+//       message:
+//         "Failed to fetch feedback",
+//     });
+//   }
+// });
 
 
 // =====================================================

@@ -1,81 +1,67 @@
+```jsx
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 
 function Dashboard() {
   const [analytics, setAnalytics] = useState({
     totalFeedback: 0,
+
     sentiment: {
       positive: 0,
-      neutral: 0,
       negative: 0,
+      neutral: 0,
     },
-    themes: [],
-    sources: [],
-  });
 
-  const [recentFeedback, setRecentFeedback] =
-    useState([]);
+    themes: [],
+
+    recentFeedback: [],
+  });
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const loadDashboard = async () => {
-      try {
-        const [
-          analyticsResponse,
-          feedbackResponse,
-        ] = await Promise.all([
-          fetch(
-            "http://localhost:5000/feedback/analytics/overview"
-          ),
-          fetch(
-            "http://localhost:5000/feedback"
-          ),
-        ]);
+  // --------------------------------------------------
+  // Fetch analytics
+  // --------------------------------------------------
 
-        const analyticsData =
-          await analyticsResponse.json();
+  const fetchAnalytics = async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-        const feedbackData =
-          await feedbackResponse.json();
+      const response = await fetch(
+        "http://localhost:5000/feedback/analytics"
+      );
 
-        if (!analyticsResponse.ok) {
-          throw new Error(
-            analyticsData.message ||
-              "Failed to load analytics"
-          );
-        }
+      const data = await response.json();
 
-        if (!feedbackResponse.ok) {
-          throw new Error(
-            feedbackData.message ||
-              "Failed to load feedback"
-          );
-        }
-
-        setAnalytics(analyticsData);
-
-        setRecentFeedback(
-          feedbackData.feedbacks
-            ?.slice(0, 5) || []
+      if (!response.ok) {
+        throw new Error(
+          data.message || "Failed to fetch analytics"
         );
-      } catch (error) {
-        console.error(
-          "Dashboard error:",
-          error
-        );
-
-        setError(
-          "Unable to load dashboard data."
-        );
-      } finally {
-        setLoading(false);
       }
-    };
 
-    loadDashboard();
+      setAnalytics(data);
+    } catch (error) {
+      console.error(
+        "Analytics fetch error:",
+        error
+      );
+
+      setError(
+        "Unable to load dashboard analytics."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnalytics();
   }, []);
+
+  // --------------------------------------------------
+  // Calculate sentiment percentage
+  // --------------------------------------------------
 
   const total =
     analytics.totalFeedback || 0;
@@ -83,20 +69,15 @@ function Dashboard() {
   const positive =
     analytics.sentiment?.positive || 0;
 
-  const neutral =
-    analytics.sentiment?.neutral || 0;
-
   const negative =
     analytics.sentiment?.negative || 0;
+
+  const neutral =
+    analytics.sentiment?.neutral || 0;
 
   const positivePercentage =
     total > 0
       ? Math.round((positive / total) * 100)
-      : 0;
-
-  const neutralPercentage =
-    total > 0
-      ? Math.round((neutral / total) * 100)
       : 0;
 
   const negativePercentage =
@@ -104,136 +85,199 @@ function Dashboard() {
       ? Math.round((negative / total) * 100)
       : 0;
 
-  return (
-    <div className="min-h-screen bg-gray-950 text-white px-6 py-8 md:px-10 lg:px-12">
+  const neutralPercentage =
+    total > 0
+      ? Math.round((neutral / total) * 100)
+      : 0;
 
-      <div className="max-w-7xl mx-auto">
+  // --------------------------------------------------
+  // Loading
+  // --------------------------------------------------
 
-        {/* Header */}
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-950 px-6 py-10 text-white sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-7xl">
 
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-10">
+          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-10 text-center">
 
-          <div>
-
-            <p className="text-sm font-semibold tracking-wider text-blue-400 uppercase">
-              Project LOOP
-            </p>
-
-            <h1 className="text-4xl md:text-5xl font-bold mt-3">
-              Analytics Dashboard
-            </h1>
-
-            <p className="text-gray-400 mt-3 max-w-2xl">
-              Understand customer sentiment,
-              themes, and feedback sources.
+            <p className="text-gray-400">
+              Loading dashboard analytics...
             </p>
 
           </div>
 
-          <Link
-            to="/add-feedback"
-            className="px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 transition font-semibold"
-          >
-            + Add Feedback
-          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // --------------------------------------------------
+  // Dashboard
+  // --------------------------------------------------
+
+  return (
+    <div className="min-h-screen bg-gray-950 px-6 py-10 text-white sm:px-8 lg:px-12">
+
+      <div className="mx-auto max-w-7xl">
+
+        {/* ==================================================
+            HEADER
+        ================================================== */}
+
+        <div className="mb-10">
+
+          <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-blue-400">
+            Project LOOP
+          </p>
+
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+
+            <div>
+
+              <h1 className="text-3xl font-bold sm:text-4xl">
+                Analytics Dashboard
+              </h1>
+
+              <p className="mt-3 max-w-2xl text-gray-400">
+                Understand your customer feedback using
+                AI-powered insights and analytics.
+              </p>
+
+            </div>
+
+            <button
+              onClick={fetchAnalytics}
+              className="w-fit rounded-xl border border-gray-700 bg-gray-900 px-5 py-3 text-sm font-medium text-gray-200 transition hover:border-blue-500 hover:bg-gray-800"
+            >
+              Refresh Analytics
+            </button>
+
+          </div>
 
         </div>
 
 
-        {/* Error */}
+        {/* ==================================================
+            ERROR
+        ================================================== */}
 
         {error && (
-          <div className="mb-8 px-5 py-4 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400">
+          <div className="mb-8 rounded-xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-400">
             {error}
           </div>
         )}
 
 
-        {/* Statistics */}
+        {/* ==================================================
+            STAT CARDS
+        ================================================== */}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
 
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+          {/* Total */}
 
-            <p className="text-gray-400 text-sm">
+          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg">
+
+            <p className="text-sm font-medium text-gray-400">
               Total Feedback
             </p>
 
-            <h2 className="text-4xl font-bold mt-4">
-              {loading ? "..." : total}
-            </h2>
+            <div className="mt-4 flex items-end justify-between">
 
-            <p className="text-gray-500 text-sm mt-3">
-              Total customer responses
+              <h2 className="text-4xl font-bold">
+                {total}
+              </h2>
+
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400">
+                F
+              </div>
+
+            </div>
+
+            <p className="mt-4 text-xs text-gray-500">
+              All customer feedback
             </p>
 
           </div>
 
 
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+          {/* Positive */}
 
-            <div className="flex justify-between items-center">
+          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg">
 
-              <p className="text-gray-400 text-sm">
-                Positive
-              </p>
+            <p className="text-sm font-medium text-gray-400">
+              Positive Feedback
+            </p>
 
-              <span className="w-3 h-3 rounded-full bg-green-400" />
+            <div className="mt-4 flex items-end justify-between">
+
+              <h2 className="text-4xl font-bold text-green-400">
+                {positive}
+              </h2>
+
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-green-500/10 text-green-400">
+                +
+              </div>
 
             </div>
 
-            <h2 className="text-4xl font-bold text-green-400 mt-4">
-              {loading ? "..." : positive}
-            </h2>
-
-            <p className="text-gray-500 text-sm mt-3">
-              {positivePercentage}% of feedback
+            <p className="mt-4 text-xs text-gray-500">
+              {positivePercentage}% of total feedback
             </p>
 
           </div>
 
 
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+          {/* Negative */}
 
-            <div className="flex justify-between items-center">
+          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg">
 
-              <p className="text-gray-400 text-sm">
-                Neutral
-              </p>
+            <p className="text-sm font-medium text-gray-400">
+              Negative Feedback
+            </p>
 
-              <span className="w-3 h-3 rounded-full bg-yellow-400" />
+            <div className="mt-4 flex items-end justify-between">
+
+              <h2 className="text-4xl font-bold text-red-400">
+                {negative}
+              </h2>
+
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-500/10 text-red-400">
+                -
+              </div>
 
             </div>
 
-            <h2 className="text-4xl font-bold text-yellow-400 mt-4">
-              {loading ? "..." : neutral}
-            </h2>
-
-            <p className="text-gray-500 text-sm mt-3">
-              {neutralPercentage}% of feedback
+            <p className="mt-4 text-xs text-gray-500">
+              {negativePercentage}% of total feedback
             </p>
 
           </div>
 
 
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+          {/* Neutral */}
 
-            <div className="flex justify-between items-center">
+          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg">
 
-              <p className="text-gray-400 text-sm">
-                Negative
-              </p>
+            <p className="text-sm font-medium text-gray-400">
+              Neutral Feedback
+            </p>
 
-              <span className="w-3 h-3 rounded-full bg-red-400" />
+            <div className="mt-4 flex items-end justify-between">
+
+              <h2 className="text-4xl font-bold text-yellow-400">
+                {neutral}
+              </h2>
+
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-yellow-500/10 text-yellow-400">
+                =
+              </div>
 
             </div>
 
-            <h2 className="text-4xl font-bold text-red-400 mt-4">
-              {loading ? "..." : negative}
-            </h2>
-
-            <p className="text-gray-500 text-sm mt-3">
-              {negativePercentage}% of feedback
+            <p className="mt-4 text-xs text-gray-500">
+              {neutralPercentage}% of total feedback
             </p>
 
           </div>
@@ -241,219 +285,284 @@ function Dashboard() {
         </div>
 
 
-        {/* Analytics */}
+        {/* ==================================================
+            SENTIMENT OVERVIEW
+        ================================================== */}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
 
           {/* Sentiment */}
 
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg sm:p-7">
 
-            <div className="mb-6">
+            <div className="mb-7">
 
               <h2 className="text-xl font-semibold">
                 Sentiment Overview
               </h2>
 
-              <p className="text-gray-500 text-sm mt-1">
-                Distribution of customer sentiment.
+              <p className="mt-2 text-sm text-gray-500">
+                AI-classified customer sentiment.
               </p>
+
+            </div>
+
+
+            {/* Positive */}
+
+            <div className="mb-6">
+
+              <div className="mb-2 flex items-center justify-between">
+
+                <span className="text-sm text-gray-300">
+                  Positive
+                </span>
+
+                <span className="text-sm font-semibold text-green-400">
+                  {positive} ({positivePercentage}%)
+                </span>
+
+              </div>
+
+              <div className="h-3 overflow-hidden rounded-full bg-gray-800">
+
+                <div
+                  className="h-full rounded-full bg-green-500"
+                  style={{
+                    width: `${positivePercentage}%`,
+                  }}
+                />
+
+              </div>
+
+            </div>
+
+
+            {/* Negative */}
+
+            <div className="mb-6">
+
+              <div className="mb-2 flex items-center justify-between">
+
+                <span className="text-sm text-gray-300">
+                  Negative
+                </span>
+
+                <span className="text-sm font-semibold text-red-400">
+                  {negative} ({negativePercentage}%)
+                </span>
+
+              </div>
+
+              <div className="h-3 overflow-hidden rounded-full bg-gray-800">
+
+                <div
+                  className="h-full rounded-full bg-red-500"
+                  style={{
+                    width: `${negativePercentage}%`,
+                  }}
+                />
+
+              </div>
+
+            </div>
+
+
+            {/* Neutral */}
+
+            <div>
+
+              <div className="mb-2 flex items-center justify-between">
+
+                <span className="text-sm text-gray-300">
+                  Neutral
+                </span>
+
+                <span className="text-sm font-semibold text-yellow-400">
+                  {neutral} ({neutralPercentage}%)
+                </span>
+
+              </div>
+
+              <div className="h-3 overflow-hidden rounded-full bg-gray-800">
+
+                <div
+                  className="h-full rounded-full bg-yellow-500"
+                  style={{
+                    width: `${neutralPercentage}%`,
+                  }}
+                />
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          {/* ==================================================
+              AI SUMMARY
+          ================================================== */}
+
+          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg sm:p-7">
+
+            <div className="mb-7">
+
+              <div className="flex items-center gap-3">
+
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 font-semibold text-blue-400">
+                  AI
+                </div>
+
+                <div>
+
+                  <h2 className="text-xl font-semibold">
+                    AI Insights
+                  </h2>
+
+                  <p className="mt-1 text-sm text-gray-500">
+                    Customer intelligence from Project LOOP.
+                  </p>
+
+                </div>
+
+              </div>
 
             </div>
 
 
             <div className="space-y-5">
 
-              <div>
+              <div className="rounded-xl border border-gray-800 bg-gray-950 p-5">
 
-                <div className="flex justify-between text-sm mb-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Feedback Volume
+                </p>
 
-                  <span className="text-gray-300">
-                    Positive
-                  </span>
-
-                  <span className="text-green-400">
-                    {positive}
-                  </span>
-
-                </div>
-
-                <div className="h-3 bg-gray-800 rounded-full overflow-hidden">
-
-                  <div
-                    className="h-full bg-green-400 rounded-full"
-                    style={{
-                      width: `${positivePercentage}%`,
-                    }}
-                  />
-
-                </div>
+                <p className="mt-2 text-sm leading-6 text-gray-300">
+                  Project LOOP has analyzed{" "}
+                  <span className="font-semibold text-white">
+                    {total}
+                  </span>{" "}
+                  customer feedback entries.
+                </p>
 
               </div>
 
 
-              <div>
+              <div className="rounded-xl border border-gray-800 bg-gray-950 p-5">
 
-                <div className="flex justify-between text-sm mb-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Dominant Sentiment
+                </p>
 
-                  <span className="text-gray-300">
-                    Neutral
-                  </span>
+                <p className="mt-2 text-sm leading-6 text-gray-300">
 
-                  <span className="text-yellow-400">
-                    {neutral}
-                  </span>
+                  {positive >= negative &&
+                  positive >= neutral ? (
+                    <>
+                      Positive feedback is currently the
+                      dominant sentiment.
+                    </>
+                  ) : negative >= positive &&
+                    negative >= neutral ? (
+                    <>
+                      Negative feedback is currently the
+                      dominant sentiment.
+                    </>
+                  ) : (
+                    <>
+                      Neutral feedback is currently the
+                      dominant sentiment.
+                    </>
+                  )}
 
-                </div>
-
-                <div className="h-3 bg-gray-800 rounded-full overflow-hidden">
-
-                  <div
-                    className="h-full bg-yellow-400 rounded-full"
-                    style={{
-                      width: `${neutralPercentage}%`,
-                    }}
-                  />
-
-                </div>
-
-              </div>
-
-
-              <div>
-
-                <div className="flex justify-between text-sm mb-2">
-
-                  <span className="text-gray-300">
-                    Negative
-                  </span>
-
-                  <span className="text-red-400">
-                    {negative}
-                  </span>
-
-                </div>
-
-                <div className="h-3 bg-gray-800 rounded-full overflow-hidden">
-
-                  <div
-                    className="h-full bg-red-400 rounded-full"
-                    style={{
-                      width: `${negativePercentage}%`,
-                    }}
-                  />
-
-                </div>
+                </p>
 
               </div>
 
             </div>
-
-          </div>
-
-
-          {/* Themes */}
-
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-
-            <div className="mb-6">
-
-              <h2 className="text-xl font-semibold">
-                Top Customer Themes
-              </h2>
-
-              <p className="text-gray-500 text-sm mt-1">
-                Topics appearing most frequently.
-              </p>
-
-            </div>
-
-
-            {analytics.themes.length === 0 ? (
-
-              <p className="text-gray-500">
-                No themes available yet.
-              </p>
-
-            ) : (
-
-              <div className="space-y-4">
-
-                {analytics.themes
-                  .slice(0, 6)
-                  .map((theme) => (
-
-                    <div
-                      key={theme._id}
-                      className="flex items-center justify-between p-4 rounded-xl bg-gray-950 border border-gray-800"
-                    >
-
-                      <span className="text-gray-300 capitalize">
-                        {theme._id}
-                      </span>
-
-                      <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-sm">
-                        {theme.count}
-                      </span>
-
-                    </div>
-
-                  ))}
-
-              </div>
-
-            )}
 
           </div>
 
         </div>
 
 
-        {/* Sources */}
+        {/* ==================================================
+            TOP THEMES
+        ================================================== */}
 
-        <div className="mt-8 bg-gray-900 border border-gray-800 rounded-2xl p-6">
+        <div className="mt-8 rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg sm:p-7">
 
-          <div className="mb-6">
+          <div className="mb-7">
 
             <h2 className="text-xl font-semibold">
-              Feedback Sources
+              Top Feedback Themes
             </h2>
 
-            <p className="text-gray-500 text-sm mt-1">
-              Where your customer feedback is coming from.
+            <p className="mt-2 text-sm text-gray-500">
+              Themes automatically identified by Gemini AI.
             </p>
 
           </div>
 
 
-          {analytics.sources.length === 0 ? (
+          {analytics.themes.length === 0 ? (
 
-            <p className="text-gray-500">
-              No source data available.
-            </p>
+            <div className="rounded-xl border border-gray-800 bg-gray-950 p-8 text-center text-sm text-gray-500">
+              No themes available yet.
+            </div>
 
           ) : (
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 
-              {analytics.sources.map((source) => (
+              {analytics.themes.map(
+                (item, index) => {
 
-                <div
-                  key={source._id}
-                  className="p-5 rounded-xl bg-gray-950 border border-gray-800"
-                >
+                  const maxCount =
+                    analytics.themes[0]?.count || 1;
 
-                  <p className="text-gray-400 text-sm capitalize">
-                    {source._id}
-                  </p>
+                  const width =
+                    Math.max(
+                      (item.count / maxCount) * 100,
+                      8
+                    );
 
-                  <p className="text-3xl font-bold mt-2">
-                    {source.count}
-                  </p>
+                  return (
+                    <div
+                      key={`${item.theme}-${index}`}
+                      className="rounded-xl border border-gray-800 bg-gray-950 p-5"
+                    >
 
-                </div>
+                      <div className="flex items-center justify-between gap-4">
 
-              ))}
+                        <p className="font-medium capitalize text-gray-200">
+                          {item.theme}
+                        </p>
+
+                        <span className="rounded-lg bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-blue-400">
+                          {item.count}
+                        </span>
+
+                      </div>
+
+
+                      <div className="mt-4 h-2 overflow-hidden rounded-full bg-gray-800">
+
+                        <div
+                          className="h-full rounded-full bg-blue-500"
+                          style={{
+                            width: `${width}%`,
+                          }}
+                        />
+
+                      </div>
+
+                    </div>
+                  );
+                }
+              )}
 
             </div>
 
@@ -462,99 +571,93 @@ function Dashboard() {
         </div>
 
 
-        {/* Recent Feedback */}
+        {/* ==================================================
+            RECENT FEEDBACK
+        ================================================== */}
 
-        <div className="mt-8 bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+        <div className="mt-8 rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg sm:p-7">
 
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-6 py-5 border-b border-gray-800">
+          <div className="mb-7">
 
-            <div>
+            <h2 className="text-xl font-semibold">
+              Recent Feedback
+            </h2>
 
-              <h2 className="text-xl font-semibold">
-                Recent Feedback
-              </h2>
-
-              <p className="text-gray-500 text-sm mt-1">
-                Latest customer responses.
-              </p>
-
-            </div>
-
-            <Link
-              to="/feedback"
-              className="text-blue-400 hover:text-blue-300 transition text-sm"
-            >
-              View all →
-            </Link>
+            <p className="mt-2 text-sm text-gray-500">
+              Latest customer feedback analyzed by AI.
+            </p>
 
           </div>
 
 
-          {recentFeedback.length === 0 ? (
+          {analytics.recentFeedback.length === 0 ? (
 
-            <div className="p-10 text-center text-gray-500">
-              No feedback available.
+            <div className="rounded-xl border border-gray-800 bg-gray-950 p-8 text-center text-sm text-gray-500">
+              No recent feedback available.
             </div>
 
           ) : (
 
-            <div className="divide-y divide-gray-800">
+            <div className="space-y-4">
 
-              {recentFeedback.map((feedback) => (
+              {analytics.recentFeedback.map(
+                (feedback) => (
 
-                <div
-                  key={feedback._id}
-                  className="p-6 hover:bg-gray-800/40 transition"
-                >
+                  <div
+                    key={feedback._id}
+                    className="rounded-xl border border-gray-800 bg-gray-950 p-5"
+                  >
 
-                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
 
-                    <div>
+                      <div>
 
-                      <h3 className="font-semibold">
-                        {feedback.customerName}
-                      </h3>
+                        <h3 className="font-semibold text-white">
+                          {feedback.customerName}
+                        </h3>
 
-                      <p className="text-sm text-gray-500 mt-1">
-                        {feedback.customerEmail}
-                      </p>
+                        <p className="mt-1 text-sm leading-6 text-gray-400">
+                          {feedback.message}
+                        </p>
 
-                    </div>
+                      </div>
 
-                    <div className="flex flex-wrap gap-3">
-
-                      <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-sm">
-                        {feedback.source}
-                      </span>
 
                       <span
-                        className={`px-3 py-1 rounded-full text-sm ${
+                        className={`w-fit rounded-full border px-3 py-1 text-xs font-semibold capitalize ${
                           feedback.sentiment === "positive"
-                            ? "bg-green-500/10 text-green-400"
+                            ? "border-green-500/20 bg-green-500/10 text-green-400"
                             : feedback.sentiment === "negative"
-                            ? "bg-red-500/10 text-red-400"
-                            : "bg-yellow-500/10 text-yellow-400"
+                            ? "border-red-500/20 bg-red-500/10 text-red-400"
+                            : "border-yellow-500/20 bg-yellow-500/10 text-yellow-400"
                         }`}
                       >
-                        {feedback.sentiment
-                          ? feedback.sentiment
-                              .charAt(0)
-                              .toUpperCase() +
-                            feedback.sentiment.slice(1)
-                          : "Neutral"}
+                        {feedback.sentiment || "unknown"}
                       </span>
 
                     </div>
+
+
+                    {feedback.summary && (
+
+                      <div className="mt-4 border-t border-gray-800 pt-4">
+
+                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          AI Summary
+                        </p>
+
+                        <p className="mt-2 text-sm leading-6 text-gray-400">
+                          {feedback.summary}
+                        </p>
+
+                      </div>
+
+                    )}
 
                   </div>
 
-                  <p className="text-gray-300 mt-4 leading-relaxed">
-                    {feedback.message}
-                  </p>
-
-                </div>
-
-              ))}
+                )
+              )}
 
             </div>
 
@@ -569,3 +672,4 @@ function Dashboard() {
 }
 
 export default Dashboard;
+```
