@@ -1,12 +1,12 @@
-const express = require("express");
+import express  from "express" ;
 
-const {
+import {
   analyzeFeedbackWithAI,
-} = require("../services/aiService");
+} from "../services/aiService.js"
 
-const router = express.Router();
+const aiRoutes = express.Router();
 
-router.post("/analyze", async (req, res) => {
+aiRoutes.post("/analyze", async (req, res) => {
   try {
     const { message } = req.body;
 
@@ -35,4 +35,4 @@ router.post("/analyze", async (req, res) => {
   }
 });
 
-module.exports = router;
+export { aiRoutes };

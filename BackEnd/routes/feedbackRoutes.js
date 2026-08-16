@@ -1,18 +1,18 @@
-const express = require("express");
-const Feedback = require("../models/Feedback");
+import express from "express";
+import {Feedback} from "../model/feedback.js"
 
-const {
+import {
   analyzeFeedbackWithAI,
-} = require("../services/aiService");
+} from "../services/aiService.js";
 
-const router = express.Router();
+const feedbackRoutes = express.Router();
 
 
 // =====================================================
 // CREATE FEEDBACK + AI ANALYSIS
 // =====================================================
 
-router.post("/", async (req, res) => {
+feedbackRoutes.post("/", async (req, res) => {
   try {
     const {
       customerName,
@@ -123,7 +123,7 @@ router.post("/", async (req, res) => {
 // GET ALL FEEDBACK
 // =====================================================
 
-router.get("/", async (req, res) => {
+feedbackRoutes.get("/", async (req, res) => {
   try {
 
     const feedbacks =
@@ -156,7 +156,7 @@ router.get("/", async (req, res) => {
 // GET SINGLE FEEDBACK
 // =====================================================
 
-// router.get("/:id", async (req, res) => {
+// feedbackRoutes.get("/:id", async (req, res) => {
 //   try {
 
 //     const feedback =
@@ -196,7 +196,7 @@ router.get("/", async (req, res) => {
 // UPDATE FEEDBACK
 // =====================================================
 
-router.put("/:id", async (req, res) => {
+feedbackRoutes.put("/:id", async (req, res) => {
   try {
 
     const {
@@ -316,7 +316,7 @@ router.put("/:id", async (req, res) => {
 // DELETE FEEDBACK
 // =====================================================
 
-router.delete("/:id", async (req, res) => {
+feedbackRoutes.delete("/:id", async (req, res) => {
   try {
 
     const deletedFeedback =
@@ -355,4 +355,4 @@ router.delete("/:id", async (req, res) => {
 });
 
 
-module.exports = router;
+export {feedbackRoutes};

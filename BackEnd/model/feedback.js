@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose"
 
 const feedbackSchema = new mongoose.Schema(
   {
@@ -61,7 +61,7 @@ recommendation: {
   }
 );
 
-const Feedback_Model = mongoose.model("Feedback",
+const Feedback = mongoose.model("Feedback",
   feedbackSchema)
 
-export {Feedback_Model}
+export {Feedback}
