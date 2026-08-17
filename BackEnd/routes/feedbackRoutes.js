@@ -1,5 +1,5 @@
 import express from "express";
-import {Feedback} from "../model/feedback.js"
+import { Feedback } from "../model/feedback.js";
 
 import {
   analyzeFeedbackWithAI,
@@ -153,8 +153,151 @@ feedbackRoutes.get("/", async (req, res) => {
 
 
 // =====================================================
+// GET DASHBOARD ANALYTICS
+// =====================================================
+
+feedbackRoutes.get("/analytics", async (req, res) => {
+  try {
+
+    // ---------------------------------------------
+    // Total feedback
+    // ---------------------------------------------
+
+    const totalFeedback =
+      await Feedback.countDocuments();
+
+
+    // ---------------------------------------------
+    // Sentiment counts
+    // ---------------------------------------------
+
+    const positiveFeedback =
+      await Feedback.countDocuments({
+        sentiment: "positive",
+      });
+
+    const negativeFeedback =
+      await Feedback.countDocuments({
+        sentiment: "negative",
+      });
+
+    const neutralFeedback =
+      await Feedback.countDocuments({
+        sentiment: "neutral",
+      });
+
+
+    // ---------------------------------------------
+    // Theme statistics
+    // ---------------------------------------------
+
+    const themeStats =
+      await Feedback.aggregate([
+
+        {
+          $unwind: {
+            path: "$themes",
+            preserveNullAndEmptyArrays: false,
+          },
+        },
+
+        {
+          $group: {
+            _id: "$themes",
+
+            count: {
+              $sum: 1,
+            },
+          },
+        },
+
+        {
+          $sort: {
+            count: -1,
+          },
+        },
+
+        {
+          $limit: 10,
+        },
+
+      ]);
+
+
+    // ---------------------------------------------
+    // Recent feedback
+    // ---------------------------------------------
+
+    const recentFeedback =
+      await Feedback.find()
+        .sort({
+          createdAt: -1,
+        })
+        .limit(5);
+
+
+    // ---------------------------------------------
+    // Send analytics response
+    // ---------------------------------------------
+
+    res.status(200).json({
+
+      totalFeedback,
+
+      sentiment: {
+
+        positive:
+          positiveFeedback,
+
+        negative:
+          negativeFeedback,
+
+        neutral:
+          neutralFeedback,
+
+      },
+
+      themes:
+        themeStats.map((item) => ({
+
+          theme:
+            item._id,
+
+          count:
+            item.count,
+
+        })),
+
+      recentFeedback,
+
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Feedback analytics error:",
+      error
+    );
+
+    res.status(500).json({
+
+      message:
+        "Failed to generate feedback analytics",
+
+      error:
+        error.message,
+
+    });
+  }
+});
+
+
+// =====================================================
 // GET SINGLE FEEDBACK
 // =====================================================
+
+// Currently disabled because we are not using
+// the individual feedback route at this stage.
 
 // feedbackRoutes.get("/:id", async (req, res) => {
 //   try {
@@ -164,14 +307,12 @@ feedbackRoutes.get("/", async (req, res) => {
 //         req.params.id
 //       );
 
-
 //     if (!feedback) {
 //       return res.status(404).json({
 //         message:
 //           "Feedback not found",
 //       });
 //     }
-
 
 //     res.status(200).json({
 //       feedback,
@@ -266,20 +407,32 @@ feedbackRoutes.put("/:id", async (req, res) => {
     // ---------------------------------------------
 
     if (customerName) {
+
       feedback.customerName =
         customerName;
+
     }
+
 
     if (customerEmail) {
+
       feedback.customerEmail =
         customerEmail;
+
     }
+
 
     if (source) {
+
       feedback.source =
         source;
+
     }
 
+
+    // ---------------------------------------------
+    // Save updated feedback
+    // ---------------------------------------------
 
     const updatedFeedback =
       await feedback.save();
@@ -303,10 +456,13 @@ feedbackRoutes.put("/:id", async (req, res) => {
     );
 
     res.status(500).json({
+
       message:
         "Failed to update feedback",
+
       error:
         error.message,
+
     });
   }
 });
@@ -326,10 +482,14 @@ feedbackRoutes.delete("/:id", async (req, res) => {
 
 
     if (!deletedFeedback) {
+
       return res.status(404).json({
+
         message:
           "Feedback not found",
+
       });
+
     }
 
 
@@ -348,11 +508,13 @@ feedbackRoutes.delete("/:id", async (req, res) => {
     );
 
     res.status(500).json({
+
       message:
         "Failed to delete feedback",
+
     });
   }
 });
 
 
-export {feedbackRoutes};
+export { feedbackRoutes };

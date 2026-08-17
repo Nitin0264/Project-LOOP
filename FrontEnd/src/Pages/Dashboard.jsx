@@ -1,5 +1,16 @@
-```jsx
 import React, { useEffect, useState } from "react";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
 
 function Dashboard() {
   const [analytics, setAnalytics] = useState({
@@ -19,9 +30,9 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // --------------------------------------------------
-  // Fetch analytics
-  // --------------------------------------------------
+  // ==================================================
+  // FETCH ANALYTICS
+  // ==================================================
 
   const fetchAnalytics = async () => {
     try {
@@ -40,7 +51,18 @@ function Dashboard() {
         );
       }
 
-      setAnalytics(data);
+      setAnalytics({
+        totalFeedback: data?.totalFeedback || 0,
+        sentiment: {
+          positive: data?.sentiment?.positive || 0,
+          negative: data?.sentiment?.negative || 0,
+          neutral: data?.sentiment?.neutral || 0,
+        },
+        themes: Array.isArray(data?.themes) ? data.themes : [],
+        recentFeedback: Array.isArray(data?.recentFeedback)
+          ? data.recentFeedback
+          : [],
+      });
     } catch (error) {
       console.error(
         "Analytics fetch error:",
@@ -59,21 +81,21 @@ function Dashboard() {
     fetchAnalytics();
   }, []);
 
-  // --------------------------------------------------
-  // Calculate sentiment percentage
-  // --------------------------------------------------
+  // ==================================================
+  // SENTIMENT DATA
+  // ==================================================
 
   const total =
-    analytics.totalFeedback || 0;
+    analytics?.totalFeedback || 0;
 
   const positive =
-    analytics.sentiment?.positive || 0;
+    analytics?.sentiment?.positive || 0;
 
   const negative =
-    analytics.sentiment?.negative || 0;
+    analytics?.sentiment?.negative || 0;
 
   const neutral =
-    analytics.sentiment?.neutral || 0;
+    analytics?.sentiment?.neutral || 0;
 
   const positivePercentage =
     total > 0
@@ -90,16 +112,52 @@ function Dashboard() {
       ? Math.round((neutral / total) * 100)
       : 0;
 
-  // --------------------------------------------------
-  // Loading
-  // --------------------------------------------------
+  // ==================================================
+  // CHART DATA
+  // ==================================================
+
+  const sentimentChartData = [
+    {
+      name: "Positive",
+      value: positive,
+    },
+    {
+      name: "Negative",
+      value: negative,
+    },
+    {
+      name: "Neutral",
+      value: neutral,
+    },
+  ];
+
+  const themeChartData =
+    Array.isArray(analytics?.themes)
+      ? analytics.themes.map((item) => ({
+          name: item?.theme || "Unknown",
+          count: item?.count || 0,
+        }))
+      : [];
+
+  const pieColors = [
+    "#22c55e",
+    "#ef4444",
+    "#eab308",
+  ];
+
+  // ==================================================
+  // LOADING
+  // ==================================================
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-950 px-6 py-10 text-white sm:px-8 lg:px-12">
+
         <div className="mx-auto max-w-7xl">
 
-          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-10 text-center">
+          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-12 text-center">
+
+            <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-gray-700 border-t-blue-500" />
 
             <p className="text-gray-400">
               Loading dashboard analytics...
@@ -108,13 +166,14 @@ function Dashboard() {
           </div>
 
         </div>
+
       </div>
     );
   }
 
-  // --------------------------------------------------
-  // Dashboard
-  // --------------------------------------------------
+  // ==================================================
+  // DASHBOARD
+  // ==================================================
 
   return (
     <div className="min-h-screen bg-gray-950 px-6 py-10 text-white sm:px-8 lg:px-12">
@@ -131,7 +190,7 @@ function Dashboard() {
             Project LOOP
           </p>
 
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
 
             <div>
 
@@ -286,19 +345,22 @@ function Dashboard() {
 
 
         {/* ==================================================
-            SENTIMENT OVERVIEW
+            CHART SECTION
         ================================================== */}
 
-        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
 
-          {/* Sentiment */}
+
+          {/* ==================================================
+              SENTIMENT BAR CHART
+          ================================================== */}
 
           <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg sm:p-7">
 
             <div className="mb-7">
 
               <h2 className="text-xl font-semibold">
-                Sentiment Overview
+                Sentiment Distribution
               </h2>
 
               <p className="mt-2 text-sm text-gray-500">
@@ -308,92 +370,77 @@ function Dashboard() {
             </div>
 
 
-            {/* Positive */}
+            <div className="h-[320px] w-full">
 
-            <div className="mb-6">
+              <ResponsiveContainer
+                width="100%"
+                height="100%"
+              >
 
-              <div className="mb-2 flex items-center justify-between">
-
-                <span className="text-sm text-gray-300">
-                  Positive
-                </span>
-
-                <span className="text-sm font-semibold text-green-400">
-                  {positive} ({positivePercentage}%)
-                </span>
-
-              </div>
-
-              <div className="h-3 overflow-hidden rounded-full bg-gray-800">
-
-                <div
-                  className="h-full rounded-full bg-green-500"
-                  style={{
-                    width: `${positivePercentage}%`,
+                <BarChart
+                  data={sentimentChartData}
+                  margin={{
+                    top: 10,
+                    right: 10,
+                    left: -15,
+                    bottom: 10,
                   }}
-                />
+                >
 
-              </div>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="#1f2937"
+                  />
 
-            </div>
+                  <XAxis
+                    dataKey="name"
+                    stroke="#9ca3af"
+                    tickLine={false}
+                    axisLine={false}
+                  />
 
+                  <YAxis
+                    stroke="#9ca3af"
+                    tickLine={false}
+                    axisLine={false}
+                    allowDecimals={false}
+                  />
 
-            {/* Negative */}
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#111827",
+                      border: "1px solid #374151",
+                      borderRadius: "12px",
+                      color: "#fff",
+                    }}
+                  />
 
-            <div className="mb-6">
+                  <Bar
+                    dataKey="value"
+                    radius={[
+                      8,
+                      8,
+                      0,
+                      0,
+                    ]}
+                  >
 
-              <div className="mb-2 flex items-center justify-between">
+                    {sentimentChartData.map(
+                      (entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={
+                            pieColors[index]
+                          }
+                        />
+                      )
+                    )}
 
-                <span className="text-sm text-gray-300">
-                  Negative
-                </span>
+                  </Bar>
 
-                <span className="text-sm font-semibold text-red-400">
-                  {negative} ({negativePercentage}%)
-                </span>
+                </BarChart>
 
-              </div>
-
-              <div className="h-3 overflow-hidden rounded-full bg-gray-800">
-
-                <div
-                  className="h-full rounded-full bg-red-500"
-                  style={{
-                    width: `${negativePercentage}%`,
-                  }}
-                />
-
-              </div>
-
-            </div>
-
-
-            {/* Neutral */}
-
-            <div>
-
-              <div className="mb-2 flex items-center justify-between">
-
-                <span className="text-sm text-gray-300">
-                  Neutral
-                </span>
-
-                <span className="text-sm font-semibold text-yellow-400">
-                  {neutral} ({neutralPercentage}%)
-                </span>
-
-              </div>
-
-              <div className="h-3 overflow-hidden rounded-full bg-gray-800">
-
-                <div
-                  className="h-full rounded-full bg-yellow-500"
-                  style={{
-                    width: `${neutralPercentage}%`,
-                  }}
-                />
-
-              </div>
+              </ResponsiveContainer>
 
             </div>
 
@@ -401,82 +448,115 @@ function Dashboard() {
 
 
           {/* ==================================================
-              AI SUMMARY
+              SENTIMENT PIE CHART
           ================================================== */}
 
           <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg sm:p-7">
 
             <div className="mb-7">
 
-              <div className="flex items-center gap-3">
+              <h2 className="text-xl font-semibold">
+                Sentiment Breakdown
+              </h2>
 
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 font-semibold text-blue-400">
-                  AI
-                </div>
-
-                <div>
-
-                  <h2 className="text-xl font-semibold">
-                    AI Insights
-                  </h2>
-
-                  <p className="mt-1 text-sm text-gray-500">
-                    Customer intelligence from Project LOOP.
-                  </p>
-
-                </div>
-
-              </div>
+              <p className="mt-2 text-sm text-gray-500">
+                Percentage of feedback by sentiment.
+              </p>
 
             </div>
 
 
-            <div className="space-y-5">
+            <div className="h-[320px] w-full">
 
-              <div className="rounded-xl border border-gray-800 bg-gray-950 p-5">
+              <ResponsiveContainer
+                width="100%"
+                height="100%"
+              >
 
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Feedback Volume
+                <PieChart>
+
+                  <Pie
+                    data={sentimentChartData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={105}
+                    innerRadius={65}
+                    paddingAngle={3}
+                  >
+
+                    {sentimentChartData.map(
+                      (entry, index) => (
+                        <Cell
+                          key={`pie-${index}`}
+                          fill={
+                            pieColors[index]
+                          }
+                        />
+                      )
+                    )}
+
+                  </Pie>
+
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#111827",
+                      border: "1px solid #374151",
+                      borderRadius: "12px",
+                      color: "#fff",
+                    }}
+                  />
+
+                </PieChart>
+
+              </ResponsiveContainer>
+
+            </div>
+
+
+            <div className="mt-2 grid grid-cols-3 gap-3">
+
+              <div className="rounded-xl bg-gray-950 p-3 text-center">
+
+                <div className="mx-auto mb-2 h-2.5 w-2.5 rounded-full bg-green-500" />
+
+                <p className="text-xs text-gray-500">
+                  Positive
                 </p>
 
-                <p className="mt-2 text-sm leading-6 text-gray-300">
-                  Project LOOP has analyzed{" "}
-                  <span className="font-semibold text-white">
-                    {total}
-                  </span>{" "}
-                  customer feedback entries.
+                <p className="mt-1 font-semibold text-green-400">
+                  {positivePercentage}%
                 </p>
 
               </div>
 
 
-              <div className="rounded-xl border border-gray-800 bg-gray-950 p-5">
+              <div className="rounded-xl bg-gray-950 p-3 text-center">
 
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Dominant Sentiment
+                <div className="mx-auto mb-2 h-2.5 w-2.5 rounded-full bg-red-500" />
+
+                <p className="text-xs text-gray-500">
+                  Negative
                 </p>
 
-                <p className="mt-2 text-sm leading-6 text-gray-300">
+                <p className="mt-1 font-semibold text-red-400">
+                  {negativePercentage}%
+                </p>
 
-                  {positive >= negative &&
-                  positive >= neutral ? (
-                    <>
-                      Positive feedback is currently the
-                      dominant sentiment.
-                    </>
-                  ) : negative >= positive &&
-                    negative >= neutral ? (
-                    <>
-                      Negative feedback is currently the
-                      dominant sentiment.
-                    </>
-                  ) : (
-                    <>
-                      Neutral feedback is currently the
-                      dominant sentiment.
-                    </>
-                  )}
+              </div>
 
+
+              <div className="rounded-xl bg-gray-950 p-3 text-center">
+
+                <div className="mx-auto mb-2 h-2.5 w-2.5 rounded-full bg-yellow-500" />
+
+                <p className="text-xs text-gray-500">
+                  Neutral
+                </p>
+
+                <p className="mt-1 font-semibold text-yellow-400">
+                  {neutralPercentage}%
                 </p>
 
               </div>
@@ -489,7 +569,7 @@ function Dashboard() {
 
 
         {/* ==================================================
-            TOP THEMES
+            THEME ANALYTICS
         ================================================== */}
 
         <div className="mt-8 rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg sm:p-7">
@@ -497,76 +577,189 @@ function Dashboard() {
           <div className="mb-7">
 
             <h2 className="text-xl font-semibold">
-              Top Feedback Themes
+              AI Feedback Themes
             </h2>
 
             <p className="mt-2 text-sm text-gray-500">
-              Themes automatically identified by Gemini AI.
+              The most common topics identified by Gemini.
             </p>
 
           </div>
 
 
-          {analytics.themes.length === 0 ? (
+          {themeChartData.length === 0 ? (
 
-            <div className="rounded-xl border border-gray-800 bg-gray-950 p-8 text-center text-sm text-gray-500">
+            <div className="rounded-xl border border-gray-800 bg-gray-950 p-10 text-center text-sm text-gray-500">
               No themes available yet.
             </div>
 
           ) : (
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="h-[350px] w-full">
 
-              {analytics.themes.map(
-                (item, index) => {
+              <ResponsiveContainer
+                width="100%"
+                height="100%"
+              >
 
-                  const maxCount =
-                    analytics.themes[0]?.count || 1;
+                <BarChart
+                  data={themeChartData}
+                  layout="vertical"
+                  margin={{
+                    top: 10,
+                    right: 20,
+                    left: 30,
+                    bottom: 10,
+                  }}
+                >
 
-                  const width =
-                    Math.max(
-                      (item.count / maxCount) * 100,
-                      8
-                    );
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="#1f2937"
+                  />
 
-                  return (
-                    <div
-                      key={`${item.theme}-${index}`}
-                      className="rounded-xl border border-gray-800 bg-gray-950 p-5"
-                    >
+                  <XAxis
+                    type="number"
+                    allowDecimals={false}
+                    stroke="#9ca3af"
+                    tickLine={false}
+                    axisLine={false}
+                  />
 
-                      <div className="flex items-center justify-between gap-4">
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={120}
+                    stroke="#9ca3af"
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{
+                      fontSize: 12,
+                    }}
+                  />
 
-                        <p className="font-medium capitalize text-gray-200">
-                          {item.theme}
-                        </p>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#111827",
+                      border: "1px solid #374151",
+                      borderRadius: "12px",
+                      color: "#fff",
+                    }}
+                  />
 
-                        <span className="rounded-lg bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-blue-400">
-                          {item.count}
-                        </span>
+                  <Bar
+                    dataKey="count"
+                    fill="#3b82f6"
+                    radius={[
+                      0,
+                      8,
+                      8,
+                      0,
+                    ]}
+                  />
 
-                      </div>
+                </BarChart>
 
-
-                      <div className="mt-4 h-2 overflow-hidden rounded-full bg-gray-800">
-
-                        <div
-                          className="h-full rounded-full bg-blue-500"
-                          style={{
-                            width: `${width}%`,
-                          }}
-                        />
-
-                      </div>
-
-                    </div>
-                  );
-                }
-              )}
+              </ResponsiveContainer>
 
             </div>
 
           )}
+
+        </div>
+
+
+        {/* ==================================================
+            AI INSIGHTS
+        ================================================== */}
+
+        <div className="mt-8 rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg sm:p-7">
+
+          <div className="mb-7 flex items-center gap-3">
+
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 font-bold text-blue-400">
+              AI
+            </div>
+
+            <div>
+
+              <h2 className="text-xl font-semibold">
+                AI Insights
+              </h2>
+
+              <p className="mt-1 text-sm text-gray-500">
+                Quick intelligence from your feedback data.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+
+            <div className="rounded-xl border border-gray-800 bg-gray-950 p-5">
+
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Feedback Volume
+              </p>
+
+              <p className="mt-3 text-2xl font-bold">
+                {total}
+              </p>
+
+              <p className="mt-2 text-sm leading-6 text-gray-500">
+                Total feedback entries analyzed by Project LOOP.
+              </p>
+
+            </div>
+
+
+            <div className="rounded-xl border border-gray-800 bg-gray-950 p-5">
+
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Dominant Sentiment
+              </p>
+
+              <p className="mt-3 text-2xl font-bold capitalize">
+
+                {positive >= negative &&
+                positive >= neutral
+                  ? "Positive"
+                  : negative >= positive &&
+                    negative >= neutral
+                  ? "Negative"
+                  : "Neutral"}
+
+              </p>
+
+              <p className="mt-2 text-sm leading-6 text-gray-500">
+                Based on current AI sentiment analysis.
+              </p>
+
+            </div>
+
+
+            <div className="rounded-xl border border-gray-800 bg-gray-950 p-5">
+
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Top Theme
+              </p>
+
+              <p className="mt-3 text-2xl font-bold capitalize">
+
+                {analytics?.themes?.[0]?.theme ||
+                  "No data"}
+
+              </p>
+
+              <p className="mt-2 text-sm leading-6 text-gray-500">
+                Most frequently detected feedback topic.
+              </p>
+
+            </div>
+
+          </div>
 
         </div>
 
@@ -590,9 +783,9 @@ function Dashboard() {
           </div>
 
 
-          {analytics.recentFeedback.length === 0 ? (
+          {!Array.isArray(analytics?.recentFeedback) || analytics.recentFeedback.length === 0 ? (
 
-            <div className="rounded-xl border border-gray-800 bg-gray-950 p-8 text-center text-sm text-gray-500">
+            <div className="rounded-xl border border-gray-800 bg-gray-950 p-10 text-center text-sm text-gray-500">
               No recent feedback available.
             </div>
 
@@ -601,11 +794,11 @@ function Dashboard() {
             <div className="space-y-4">
 
               {analytics.recentFeedback.map(
-                (feedback) => (
+                (feedback, index) => (
 
                   <div
-                    key={feedback._id}
-                    className="rounded-xl border border-gray-800 bg-gray-950 p-5"
+                    key={feedback?._id || `feedback-${index}`}
+                    className="rounded-xl border border-gray-800 bg-gray-950 p-5 transition hover:border-gray-700"
                   >
 
                     <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -613,11 +806,11 @@ function Dashboard() {
                       <div>
 
                         <h3 className="font-semibold text-white">
-                          {feedback.customerName}
+                          {feedback?.customerName || "Anonymous"}
                         </h3>
 
                         <p className="mt-1 text-sm leading-6 text-gray-400">
-                          {feedback.message}
+                          {feedback?.message || "No message content."}
                         </p>
 
                       </div>
@@ -625,20 +818,23 @@ function Dashboard() {
 
                       <span
                         className={`w-fit rounded-full border px-3 py-1 text-xs font-semibold capitalize ${
-                          feedback.sentiment === "positive"
+                          feedback?.sentiment ===
+                          "positive"
                             ? "border-green-500/20 bg-green-500/10 text-green-400"
-                            : feedback.sentiment === "negative"
+                            : feedback?.sentiment ===
+                              "negative"
                             ? "border-red-500/20 bg-red-500/10 text-red-400"
                             : "border-yellow-500/20 bg-yellow-500/10 text-yellow-400"
                         }`}
                       >
-                        {feedback.sentiment || "unknown"}
+                        {feedback?.sentiment ||
+                          "unknown"}
                       </span>
 
                     </div>
 
 
-                    {feedback.summary && (
+                    {feedback?.summary && (
 
                       <div className="mt-4 border-t border-gray-800 pt-4">
 
@@ -672,4 +868,3 @@ function Dashboard() {
 }
 
 export default Dashboard;
-```
