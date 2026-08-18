@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 import {
   ResponsiveContainer,
   BarChart,
@@ -13,6 +15,9 @@ import {
 } from "recharts";
 
 function Dashboard() {
+
+  const navigate = useNavigate();
+
   const [analytics, setAnalytics] = useState({
     totalFeedback: 0,
 
@@ -30,12 +35,15 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+
   // ==================================================
   // FETCH ANALYTICS
   // ==================================================
 
   const fetchAnalytics = async () => {
+
     try {
+
       setLoading(true);
       setError("");
 
@@ -46,24 +54,46 @@ function Dashboard() {
       const data = await response.json();
 
       if (!response.ok) {
+
         throw new Error(
-          data.message || "Failed to fetch analytics"
+          data.message ||
+          "Failed to fetch analytics"
         );
+
       }
 
       setAnalytics({
-        totalFeedback: data?.totalFeedback || 0,
+
+        totalFeedback:
+          data?.totalFeedback || 0,
+
         sentiment: {
-          positive: data?.sentiment?.positive || 0,
-          negative: data?.sentiment?.negative || 0,
-          neutral: data?.sentiment?.neutral || 0,
+
+          positive:
+            data?.sentiment?.positive || 0,
+
+          negative:
+            data?.sentiment?.negative || 0,
+
+          neutral:
+            data?.sentiment?.neutral || 0,
+
         },
-        themes: Array.isArray(data?.themes) ? data.themes : [],
-        recentFeedback: Array.isArray(data?.recentFeedback)
-          ? data.recentFeedback
-          : [],
+
+        themes:
+          Array.isArray(data?.themes)
+            ? data.themes
+            : [],
+
+        recentFeedback:
+          Array.isArray(data?.recentFeedback)
+            ? data.recentFeedback
+            : [],
+
       });
+
     } catch (error) {
+
       console.error(
         "Analytics fetch error:",
         error
@@ -72,14 +102,22 @@ function Dashboard() {
       setError(
         "Unable to load dashboard analytics."
       );
+
     } finally {
+
       setLoading(false);
+
     }
+
   };
 
+
   useEffect(() => {
+
     fetchAnalytics();
+
   }, []);
+
 
   // ==================================================
   // SENTIMENT DATA
@@ -97,60 +135,93 @@ function Dashboard() {
   const neutral =
     analytics?.sentiment?.neutral || 0;
 
+
   const positivePercentage =
     total > 0
-      ? Math.round((positive / total) * 100)
+      ? Math.round(
+          (positive / total) * 100
+        )
       : 0;
+
 
   const negativePercentage =
     total > 0
-      ? Math.round((negative / total) * 100)
+      ? Math.round(
+          (negative / total) * 100
+        )
       : 0;
+
 
   const neutralPercentage =
     total > 0
-      ? Math.round((neutral / total) * 100)
+      ? Math.round(
+          (neutral / total) * 100
+        )
       : 0;
+
 
   // ==================================================
   // CHART DATA
   // ==================================================
 
   const sentimentChartData = [
+
     {
       name: "Positive",
       value: positive,
     },
+
     {
       name: "Negative",
       value: negative,
     },
+
     {
       name: "Neutral",
       value: neutral,
     },
+
   ];
+
 
   const themeChartData =
     Array.isArray(analytics?.themes)
-      ? analytics.themes.map((item) => ({
-          name: item?.theme || "Unknown",
-          count: item?.count || 0,
-        }))
+
+      ? analytics.themes.map(
+          (item) => ({
+
+            name:
+              item?.theme ||
+              "Unknown",
+
+            count:
+              item?.count || 0,
+
+          })
+        )
+
       : [];
 
+
   const pieColors = [
+
     "#22c55e",
+
     "#ef4444",
+
     "#eab308",
+
   ];
+
 
   // ==================================================
   // LOADING
   // ==================================================
 
   if (loading) {
+
     return (
+
       <div className="min-h-screen bg-gray-950 px-6 py-10 text-white sm:px-8 lg:px-12">
 
         <div className="mx-auto max-w-7xl">
@@ -168,17 +239,22 @@ function Dashboard() {
         </div>
 
       </div>
+
     );
+
   }
+
 
   // ==================================================
   // DASHBOARD
   // ==================================================
 
   return (
+
     <div className="min-h-screen bg-gray-950 px-6 py-10 text-white sm:px-8 lg:px-12">
 
       <div className="mx-auto max-w-7xl">
+
 
         {/* ==================================================
             HEADER
@@ -189,6 +265,7 @@ function Dashboard() {
           <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-blue-400">
             Project LOOP
           </p>
+
 
           <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
 
@@ -205,12 +282,46 @@ function Dashboard() {
 
             </div>
 
-            <button
-              onClick={fetchAnalytics}
-              className="w-fit rounded-xl border border-gray-700 bg-gray-900 px-5 py-3 text-sm font-medium text-gray-200 transition hover:border-blue-500 hover:bg-gray-800"
-            >
-              Refresh Analytics
-            </button>
+
+            {/* ==================================================
+                ACTION BUTTONS
+            ================================================== */}
+
+            <div className="flex flex-wrap items-center gap-3">
+
+
+              {/* ADD FEEDBACK */}
+
+              <button
+                type="button"
+                onClick={() =>
+                  navigate("/add-feedback")
+                }
+                className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+              >
+
+                <span className="text-xl leading-none">
+                  +
+                </span>
+
+                Add Feedback
+
+              </button>
+
+
+              {/* REFRESH */}
+
+              <button
+                type="button"
+                onClick={fetchAnalytics}
+                className="rounded-xl border border-gray-700 bg-gray-900 px-5 py-3 text-sm font-medium text-gray-200 transition hover:border-blue-500 hover:bg-gray-800"
+              >
+
+                Refresh Analytics
+
+              </button>
+
+            </div>
 
           </div>
 
@@ -222,9 +333,13 @@ function Dashboard() {
         ================================================== */}
 
         {error && (
+
           <div className="mb-8 rounded-xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-400">
+
             {error}
+
           </div>
+
         )}
 
 
@@ -234,7 +349,8 @@ function Dashboard() {
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
 
-          {/* Total */}
+
+          {/* TOTAL */}
 
           <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg">
 
@@ -261,7 +377,7 @@ function Dashboard() {
           </div>
 
 
-          {/* Positive */}
+          {/* POSITIVE */}
 
           <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg">
 
@@ -288,7 +404,7 @@ function Dashboard() {
           </div>
 
 
-          {/* Negative */}
+          {/* NEGATIVE */}
 
           <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg">
 
@@ -315,7 +431,7 @@ function Dashboard() {
           </div>
 
 
-          {/* Neutral */}
+          {/* NEUTRAL */}
 
           <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg">
 
@@ -351,9 +467,7 @@ function Dashboard() {
         <div className="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
 
 
-          {/* ==================================================
-              SENTIMENT BAR CHART
-          ================================================== */}
+          {/* SENTIMENT BAR CHART */}
 
           <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg sm:p-7">
 
@@ -427,12 +541,14 @@ function Dashboard() {
 
                     {sentimentChartData.map(
                       (entry, index) => (
+
                         <Cell
                           key={`cell-${index}`}
                           fill={
                             pieColors[index]
                           }
                         />
+
                       )
                     )}
 
@@ -447,9 +563,7 @@ function Dashboard() {
           </div>
 
 
-          {/* ==================================================
-              SENTIMENT PIE CHART
-          ================================================== */}
+          {/* SENTIMENT PIE CHART */}
 
           <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg sm:p-7">
 
@@ -488,12 +602,14 @@ function Dashboard() {
 
                     {sentimentChartData.map(
                       (entry, index) => (
+
                         <Cell
                           key={`pie-${index}`}
                           fill={
                             pieColors[index]
                           }
                         />
+
                       )
                     )}
 
@@ -725,10 +841,14 @@ function Dashboard() {
 
                 {positive >= negative &&
                 positive >= neutral
+
                   ? "Positive"
+
                   : negative >= positive &&
                     negative >= neutral
+
                   ? "Negative"
+
                   : "Neutral"}
 
               </p>
@@ -783,10 +903,15 @@ function Dashboard() {
           </div>
 
 
-          {!Array.isArray(analytics?.recentFeedback) || analytics.recentFeedback.length === 0 ? (
+          {!Array.isArray(
+            analytics?.recentFeedback
+          ) ||
+          analytics.recentFeedback.length === 0 ? (
 
             <div className="rounded-xl border border-gray-800 bg-gray-950 p-10 text-center text-sm text-gray-500">
+
               No recent feedback available.
+
             </div>
 
           ) : (
@@ -797,7 +922,10 @@ function Dashboard() {
                 (feedback, index) => (
 
                   <div
-                    key={feedback?._id || `feedback-${index}`}
+                    key={
+                      feedback?._id ||
+                      `feedback-${index}`
+                    }
                     className="rounded-xl border border-gray-800 bg-gray-950 p-5 transition hover:border-gray-700"
                   >
 
@@ -806,11 +934,13 @@ function Dashboard() {
                       <div>
 
                         <h3 className="font-semibold text-white">
-                          {feedback?.customerName || "Anonymous"}
+                          {feedback?.customerName ||
+                            "Anonymous"}
                         </h3>
 
                         <p className="mt-1 text-sm leading-6 text-gray-400">
-                          {feedback?.message || "No message content."}
+                          {feedback?.message ||
+                            "No message content."}
                         </p>
 
                       </div>
@@ -820,15 +950,21 @@ function Dashboard() {
                         className={`w-fit rounded-full border px-3 py-1 text-xs font-semibold capitalize ${
                           feedback?.sentiment ===
                           "positive"
+
                             ? "border-green-500/20 bg-green-500/10 text-green-400"
+
                             : feedback?.sentiment ===
                               "negative"
+
                             ? "border-red-500/20 bg-red-500/10 text-red-400"
+
                             : "border-yellow-500/20 bg-yellow-500/10 text-yellow-400"
                         }`}
                       >
+
                         {feedback?.sentiment ||
                           "unknown"}
+
                       </span>
 
                     </div>
@@ -864,7 +1000,10 @@ function Dashboard() {
       </div>
 
     </div>
+
   );
+
 }
 
 export default Dashboard;
+

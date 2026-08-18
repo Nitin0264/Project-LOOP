@@ -14,6 +14,10 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
 
 
+  // =====================================================
+  // HANDLE INPUT
+  // =====================================================
+
   const handleChange = (e) => {
 
     setFormData({
@@ -23,6 +27,10 @@ function LoginPage() {
 
   };
 
+
+  // =====================================================
+  // LOGIN
+  // =====================================================
 
   const handleSubmit = async (e) => {
 
@@ -50,27 +58,73 @@ function LoginPage() {
       const data = await response.json();
 
 
+      // =================================================
+      // LOGIN FAILED
+      // =================================================
+
       if (!response.ok) {
 
-        setError(data.message || "Login failed");
-
-        setLoading(false);
+        setError(
+          data.message || "Login failed"
+        );
 
         return;
       }
 
 
-      // Save JWT token
-      localStorage.setItem("token", data.token);
+      // =================================================
+      // CHECK TOKEN
+      // =================================================
+
+      if (!data.token) {
+
+        setError(
+          "Login successful, but no authentication token was received."
+        );
+
+        return;
+      }
 
 
-      // Login successful
-      navigate("/dashboard");
+      // =================================================
+      // SAVE JWT
+      // =================================================
+
+      localStorage.setItem(
+        "token",
+        data.token
+      );
+
+
+      // =================================================
+      // SAVE USER DATA IF PROVIDED
+      // =================================================
+
+      if (data.user) {
+
+        localStorage.setItem(
+          "user",
+          JSON.stringify(data.user)
+        );
+
+      }
+
+
+      // =================================================
+      // GO TO DASHBOARD
+      // =================================================
+
+      navigate("/dashboard", {
+        replace: true
+      });
 
 
     } catch (error) {
 
-      console.error(error);
+      console.error(
+        "Login error:",
+        error
+      );
 
       setError(
         "Unable to connect to the server. Please try again."
@@ -85,13 +139,20 @@ function LoginPage() {
   };
 
 
+  // =====================================================
+  // UI
+  // =====================================================
+
   return (
 
     <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-6 py-16">
 
       <div className="w-full max-w-md">
 
-        {/* Heading */}
+
+        {/* =================================================
+            HEADING
+        ================================================= */}
 
         <div className="text-center mb-10">
 
@@ -106,7 +167,9 @@ function LoginPage() {
         </div>
 
 
-        {/* Login Card */}
+        {/* =================================================
+            LOGIN CARD
+        ================================================= */}
 
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 shadow-xl">
 
@@ -116,7 +179,9 @@ function LoginPage() {
           >
 
 
-            {/* Error */}
+            {/* =================================================
+                ERROR
+            ================================================= */}
 
             {error && (
 
@@ -129,7 +194,9 @@ function LoginPage() {
             )}
 
 
-            {/* Email */}
+            {/* =================================================
+                EMAIL
+            ================================================= */}
 
             <div className="flex flex-col gap-2">
 
@@ -148,13 +215,16 @@ function LoginPage() {
                 onChange={handleChange}
                 placeholder="Enter your email"
                 required
+                autoComplete="email"
                 className="w-full px-4 py-3.5 rounded-lg bg-gray-950 border border-gray-700 text-white placeholder-gray-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
               />
 
             </div>
 
 
-            {/* Password */}
+            {/* =================================================
+                PASSWORD
+            ================================================= */}
 
             <div className="flex flex-col gap-2">
 
@@ -173,13 +243,16 @@ function LoginPage() {
                 onChange={handleChange}
                 placeholder="Enter your password"
                 required
+                autoComplete="current-password"
                 className="w-full px-4 py-3.5 rounded-lg bg-gray-950 border border-gray-700 text-white placeholder-gray-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
               />
 
             </div>
 
 
-            {/* Remember + Forgot */}
+            {/* =================================================
+                REMEMBER + FORGOT
+            ================================================= */}
 
             <div className="flex items-center justify-between text-sm">
 
@@ -205,7 +278,9 @@ function LoginPage() {
             </div>
 
 
-            {/* Login Button */}
+            {/* =================================================
+                LOGIN BUTTON
+            ================================================= */}
 
             <button
               type="submit"
@@ -213,15 +288,18 @@ function LoginPage() {
               className="w-full py-3.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-blue-900 disabled:cursor-not-allowed font-semibold transition"
             >
 
-              {loading ? "Signing in..." : "Sign In to LOOP"}
+              {loading
+                ? "Signing in..."
+                : "Sign In to LOOP"}
 
             </button>
-
 
           </form>
 
 
-          {/* Register */}
+          {/* =================================================
+              REGISTER
+          ================================================= */}
 
           <div className="mt-8 pt-6 border-t border-gray-800 text-center">
 
@@ -243,7 +321,9 @@ function LoginPage() {
         </div>
 
 
-        {/* Security message */}
+        {/* =================================================
+            SECURITY MESSAGE
+        ================================================= */}
 
         <p className="text-center text-xs text-gray-600 mt-6">
 
