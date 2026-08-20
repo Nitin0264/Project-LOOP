@@ -1,161 +1,111 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import api from "../services/api";
 
 function LoginPage() {
-
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     email: "",
-    password: ""
+    password: "",
   });
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
 
   // =====================================================
   // HANDLE INPUT
   // =====================================================
 
   const handleChange = (e) => {
-
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
-
   };
-
 
   // =====================================================
   // LOGIN
   // =====================================================
 
   const handleSubmit = async (e) => {
-
     e.preventDefault();
 
     setError("");
     setLoading(true);
 
     try {
-
-      const response = await fetch(
-        "http://localhost:5000/auth/login",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type": "application/json"
-          },
-
-          body: JSON.stringify(formData)
-        }
-      );
-
-
-      const data = await response.json();
-
+      const data = await api("/auth/login", {
+        method: "POST",
+        body: JSON.stringify(formData),
+      });
 
       // =================================================
       // LOGIN FAILED
       // =================================================
 
-      if (!response.ok) {
-
-        setError(
-          data.message || "Login failed"
-        );
-
+      if (!data.success) {
+        setError(data.message || "Login failed.");
         return;
       }
-
 
       // =================================================
       // CHECK TOKEN
       // =================================================
 
       if (!data.token) {
-
         setError(
           "Login successful, but no authentication token was received."
         );
-
         return;
       }
-
 
       // =================================================
       // SAVE JWT
       // =================================================
 
-      localStorage.setItem(
-        "token",
-        data.token
-      );
-
+      localStorage.setItem("token", data.token);
 
       // =================================================
-      // SAVE USER DATA IF PROVIDED
+      // SAVE USER DATA
       // =================================================
 
       if (data.user) {
-
-        localStorage.setItem(
-          "user",
-          JSON.stringify(data.user)
-        );
-
+        localStorage.setItem("user", JSON.stringify(data.user));
       }
 
-
       // =================================================
-      // GO TO DASHBOARD
+      // REDIRECT TO DASHBOARD
       // =================================================
 
       navigate("/dashboard", {
-        replace: true
+        replace: true,
       });
-
-
     } catch (error) {
-
-      console.error(
-        "Login error:",
-        error
-      );
+      console.error("Login error:", error);
 
       setError(
-        "Unable to connect to the server. Please try again."
+        error.message ||
+          "Unable to connect to the server. Please try again."
       );
-
     } finally {
-
       setLoading(false);
-
     }
-
   };
-
 
   // =====================================================
   // UI
   // =====================================================
 
   return (
-
     <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-6 py-16">
-
       <div className="w-full max-w-md">
-
 
         {/* =================================================
             HEADING
         ================================================= */}
 
         <div className="text-center mb-10">
-
           <h1 className="text-4xl font-bold">
             Welcome Back
           </h1>
@@ -163,9 +113,7 @@ function LoginPage() {
           <p className="mt-3 text-gray-400">
             Sign in to continue to your Project LOOP workspace.
           </p>
-
         </div>
-
 
         {/* =================================================
             LOGIN CARD
@@ -178,28 +126,21 @@ function LoginPage() {
             className="flex flex-col gap-6"
           >
 
-
             {/* =================================================
                 ERROR
             ================================================= */}
 
             {error && (
-
               <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
-
                 {error}
-
               </div>
-
             )}
-
 
             {/* =================================================
                 EMAIL
             ================================================= */}
 
             <div className="flex flex-col gap-2">
-
               <label
                 htmlFor="email"
                 className="text-sm font-medium text-gray-200"
@@ -218,16 +159,13 @@ function LoginPage() {
                 autoComplete="email"
                 className="w-full px-4 py-3.5 rounded-lg bg-gray-950 border border-gray-700 text-white placeholder-gray-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
               />
-
             </div>
-
 
             {/* =================================================
                 PASSWORD
             ================================================= */}
 
             <div className="flex flex-col gap-2">
-
               <label
                 htmlFor="password"
                 className="text-sm font-medium text-gray-200"
@@ -246,9 +184,7 @@ function LoginPage() {
                 autoComplete="current-password"
                 className="w-full px-4 py-3.5 rounded-lg bg-gray-950 border border-gray-700 text-white placeholder-gray-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
               />
-
             </div>
-
 
             {/* =================================================
                 REMEMBER + FORGOT
@@ -257,16 +193,13 @@ function LoginPage() {
             <div className="flex items-center justify-between text-sm">
 
               <label className="flex items-center gap-2 text-gray-400">
-
                 <input
                   type="checkbox"
                   className="w-4 h-4"
                 />
 
                 Remember me
-
               </label>
-
 
               <button
                 type="button"
@@ -277,7 +210,6 @@ function LoginPage() {
 
             </div>
 
-
             {/* =================================================
                 LOGIN BUTTON
             ================================================= */}
@@ -287,24 +219,19 @@ function LoginPage() {
               disabled={loading}
               className="w-full py-3.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-blue-900 disabled:cursor-not-allowed font-semibold transition"
             >
-
               {loading
                 ? "Signing in..."
                 : "Sign In to LOOP"}
-
             </button>
 
           </form>
-
 
           {/* =================================================
               REGISTER
           ================================================= */}
 
           <div className="mt-8 pt-6 border-t border-gray-800 text-center">
-
             <p className="text-gray-400">
-
               Don't have an account?
 
               <Link
@@ -313,30 +240,22 @@ function LoginPage() {
               >
                 Create Account
               </Link>
-
             </p>
-
           </div>
 
         </div>
-
 
         {/* =================================================
             SECURITY MESSAGE
         ================================================= */}
 
         <p className="text-center text-xs text-gray-600 mt-6">
-
           Your account is protected with secure authentication.
-
         </p>
 
       </div>
-
     </div>
-
   );
-
 }
 
 export default LoginPage;

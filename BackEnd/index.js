@@ -1,43 +1,90 @@
-import express from 'express'
-import cors  from 'cors'
-import dotenv from 'dotenv'
-import cookieParser from 'cookie-parser'
-import { connectDB } from './config/db.js'
-import { authRoutes } from './routes/authRoutes.js'
+import dotenv from "dotenv";
+
+dotenv.config();
+
+import express from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+
+import { connectDB } from "./config/db.js";
+
+import { authRoutes } from "./routes/authRoutes.js";
 import { feedbackRoutes } from "./routes/feedbackRoutes.js";
 import { aiRoutes } from "./routes/aiRoutes.js";
+
+// =====================================================
+// APP CONFIGURATION
+// =====================================================
+
+const app = express();
+
 const PORT = process.env.PORT || 5000;
 
-dotenv.config()
+// =====================================================
+// DATABASE
+// =====================================================
 
+connectDB();
 
-const app = express()
+// =====================================================
+// MIDDLEWARE
+// =====================================================
 
-// Connect MongoDB
-connectDB()
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 
-app.use(cors())
-app.use(express.json())
-app.use(express.urlencoded({extended: true}))
-app.use(cookieParser())
+app.use(express.json());
 
-// Routes
-app.use('/auth', authRoutes)
+app.use(
+  express.urlencoded({
+    extended: true,
+  })
+);
+
+app.use(cookieParser());
+
+// =====================================================
+// ROUTES
+// =====================================================
+
+app.use("/auth", authRoutes);
+
 app.use("/feedback", feedbackRoutes);
+
 app.use("/ai", aiRoutes);
 
-app.get('/', (req, res) => {
-  res.send('<h2>App is running !</h2>')
-})
+// =====================================================
+// HEALTH CHECK
+// =====================================================
 
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Project LOOP API is running.",
+  });
+});
 
-app.use('/auth', authRoutes)
+// =====================================================
+// 404 HANDLER
+// =====================================================
 
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found.",
+  });
+});
 
-try {
+// =====================================================
+// START SERVER
+// =====================================================
+
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
-})
-} catch (err) {
-  console.log("Unable to start server : ", err);
-}
+  console.log(
+    `Server running on port ${PORT}`
+  );
+});

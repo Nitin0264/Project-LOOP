@@ -17,6 +17,10 @@ function AddFeedbackPage() {
   const [success, setSuccess] = useState("");
 
 
+  // =====================================================
+  // HANDLE INPUT CHANGES
+  // =====================================================
+
   const handleChange = (e) => {
 
     const { name, value } = e.target;
@@ -29,6 +33,10 @@ function AddFeedbackPage() {
   };
 
 
+  // =====================================================
+  // HANDLE FORM SUBMISSION
+  // =====================================================
+
   const handleSubmit = async (e) => {
 
     e.preventDefault();
@@ -39,6 +47,33 @@ function AddFeedbackPage() {
 
     try {
 
+      // =================================================
+      // GET JWT TOKEN
+      // =================================================
+
+      const token = localStorage.getItem("token");
+
+      console.log("Token found:", !!token);
+
+
+      // =================================================
+      // CHECK LOGIN
+      // =================================================
+
+      if (!token) {
+
+        setError(
+          "You are not logged in. Please login first."
+        );
+
+        return;
+      }
+
+
+      // =================================================
+      // SEND FEEDBACK TO BACKEND
+      // =================================================
+
       const response = await fetch(
         "http://localhost:5000/feedback",
         {
@@ -46,6 +81,10 @@ function AddFeedbackPage() {
 
           headers: {
             "Content-Type": "application/json",
+
+            // IMPORTANT:
+            // Send JWT token to protected backend route
+            Authorization: `Bearer ${token}`,
           },
 
           body: JSON.stringify(feedback),
@@ -53,23 +92,48 @@ function AddFeedbackPage() {
       );
 
 
+      // =================================================
+      // READ RESPONSE
+      // =================================================
+
       const data = await response.json();
 
+
+      console.log(
+        "Feedback API response:",
+        data
+      );
+
+
+      // =================================================
+      // HANDLE API ERROR
+      // =================================================
 
       if (!response.ok) {
 
         setError(
-          data.message || "Unable to save feedback."
+          data.message ||
+          data.error ||
+          "Unable to save feedback."
         );
 
         return;
       }
 
 
-      setSuccess("Feedback saved successfully!");
+      // =================================================
+      // SUCCESS
+      // =================================================
+
+      setSuccess(
+        "Feedback saved successfully!"
+      );
 
 
-      // Clear the form
+      // =================================================
+      // CLEAR FORM
+      // =================================================
+
       setFeedback({
         customerName: "",
         customerEmail: "",
@@ -78,15 +142,23 @@ function AddFeedbackPage() {
       });
 
 
-      // Go back to feedback page
+      // =================================================
+      // GO BACK TO FEEDBACK PAGE
+      // =================================================
+
       setTimeout(() => {
+
         navigate("/feedback");
+
       }, 1000);
 
 
     } catch (error) {
 
-      console.error("Feedback submission error:", error);
+      console.error(
+        "Feedback submission error:",
+        error
+      );
 
       setError(
         "Unable to connect to the server. Please try again."
@@ -101,12 +173,19 @@ function AddFeedbackPage() {
   };
 
 
+  // =====================================================
+  // UI
+  // =====================================================
+
   return (
+
     <div className="min-h-screen bg-gray-950 text-white px-6 py-10 md:px-10 lg:px-12">
 
       <div className="max-w-4xl mx-auto">
 
-        {/* Header */}
+        {/* =================================================
+            HEADER
+        ================================================= */}
 
         <div className="mb-10">
 
@@ -127,7 +206,9 @@ function AddFeedbackPage() {
         </div>
 
 
-        {/* Form Card */}
+        {/* =================================================
+            FORM CARD
+        ================================================= */}
 
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 md:p-8 lg:p-10">
 
@@ -136,29 +217,39 @@ function AddFeedbackPage() {
             className="flex flex-col gap-7"
           >
 
-            {/* Error Message */}
+            {/* =================================================
+                ERROR MESSAGE
+            ================================================= */}
 
             {error && (
 
               <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400">
+
                 {error}
+
               </div>
 
             )}
 
 
-            {/* Success Message */}
+            {/* =================================================
+                SUCCESS MESSAGE
+            ================================================= */}
 
             {success && (
 
               <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/30 text-green-400">
+
                 {success}
+
               </div>
 
             )}
 
 
-            {/* Customer Name */}
+            {/* =================================================
+                CUSTOMER NAME
+            ================================================= */}
 
             <div className="flex flex-col gap-2">
 
@@ -183,7 +274,9 @@ function AddFeedbackPage() {
             </div>
 
 
-            {/* Customer Email */}
+            {/* =================================================
+                CUSTOMER EMAIL
+            ================================================= */}
 
             <div className="flex flex-col gap-2">
 
@@ -208,7 +301,9 @@ function AddFeedbackPage() {
             </div>
 
 
-            {/* Feedback Source */}
+            {/* =================================================
+                FEEDBACK SOURCE
+            ================================================= */}
 
             <div className="flex flex-col gap-2">
 
@@ -257,7 +352,9 @@ function AddFeedbackPage() {
             </div>
 
 
-            {/* Feedback Message */}
+            {/* =================================================
+                FEEDBACK MESSAGE
+            ================================================= */}
 
             <div className="flex flex-col gap-2">
 
@@ -286,7 +383,9 @@ function AddFeedbackPage() {
             </div>
 
 
-            {/* Buttons */}
+            {/* =================================================
+                BUTTONS
+            ================================================= */}
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
 
@@ -295,7 +394,11 @@ function AddFeedbackPage() {
                 disabled={loading}
                 className="px-7 py-3.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-blue-900 disabled:cursor-not-allowed transition font-semibold"
               >
-                {loading ? "Saving Feedback..." : "Save Feedback"}
+
+                {loading
+                  ? "Saving Feedback..."
+                  : "Save Feedback"}
+
               </button>
 
 
@@ -304,7 +407,9 @@ function AddFeedbackPage() {
                 onClick={() => navigate("/feedback")}
                 className="px-7 py-3.5 rounded-lg border border-gray-700 hover:bg-gray-800 transition font-semibold"
               >
+
                 Cancel
+
               </button>
 
             </div>
@@ -316,7 +421,9 @@ function AddFeedbackPage() {
       </div>
 
     </div>
+
   );
+
 }
 
 export default AddFeedbackPage;

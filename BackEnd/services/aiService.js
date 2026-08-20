@@ -1,8 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import { GoogleGenAI } from "@google/genai";
-
+import { GoogleGenAI, Type } from "@google/genai";
 
 // =====================================================
 // CHECK GEMINI API KEY
@@ -24,8 +23,51 @@ console.log("Gemini API key loaded successfully.");
 // =====================================================
 
 const ai = new GoogleGenAI({
-  apiKey: apiKey,
+  apiKey,
 });
+
+
+// =====================================================
+// AI RESPONSE SCHEMA
+// =====================================================
+
+const feedbackAnalysisSchema = {
+  type: Type.OBJECT,
+
+  properties: {
+    sentiment: {
+      type: Type.STRING,
+      enum: ["positive", "negative", "neutral"],
+    },
+
+    themes: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.STRING,
+      },
+    },
+
+    summary: {
+      type: Type.STRING,
+    },
+
+    keyIssue: {
+      type: Type.STRING,
+    },
+
+    recommendation: {
+      type: Type.STRING,
+    },
+  },
+
+  required: [
+    "sentiment",
+    "themes",
+    "summary",
+    "keyIssue",
+    "recommendation",
+  ],
+};
 
 
 // =====================================================
@@ -33,81 +75,233 @@ const ai = new GoogleGenAI({
 // =====================================================
 
 const analyzeFeedbackWithAI = async (message) => {
-
   try {
 
-    console.log("Sending feedback to Gemini...");
+    // =================================================
+    // VALIDATE FEEDBACK
+    // =================================================
 
+    if (!message || typeof message !== "string") {
+      throw new Error(
+        "Feedback message is required."
+      );
+    }
+
+    const cleanMessage = message.trim();
+
+    if (!cleanMessage) {
+      throw new Error(
+        "Feedback message cannot be empty."
+      );
+    }
+
+    console.log(
+      "Sending feedback to Gemini..."
+    );
+
+    console.log(
+      "Feedback:",
+      cleanMessage
+    );
+
+
+    // =================================================
+    // PROMPT
+    // =================================================
 
     const prompt = `
 You are an AI customer feedback analyst for Project LOOP.
 
 Analyze the following customer feedback:
 
-"${message}"
+"${cleanMessage}"
 
-Return ONLY valid JSON using exactly this structure:
+Identify:
 
-{
-  "sentiment": "positive",
-  "themes": ["theme1", "theme2"],
-  "summary": "short summary",
-  "keyIssue": "main issue",
-  "recommendation": "recommended action"
-}
+1. Customer sentiment
+2. Important themes
+3. A short summary
+4. The main issue or important positive point
+5. A practical recommendation
 
 Rules:
 
-1. sentiment must be exactly:
-   positive
-   negative
-   neutral
+1. sentiment must be exactly one of:
+   - positive
+   - negative
+   - neutral
 
 2. themes must always be an array of strings.
 
 3. summary must be short and clear.
 
-4. keyIssue must identify the main issue or important positive point.
+4. keyIssue must identify the main complaint,
+   issue, or important positive point.
 
-5. recommendation must provide a practical action.
+5. recommendation must provide a practical
+   action that a business could take.
 
-6. If the feedback is random, meaningless, or too short:
+6. If the feedback is random, meaningless,
+   unclear, or too short to analyze:
+
    - sentiment = neutral
-   - identify it as unclear or invalid feedback
-   - recommend requesting clearer feedback.
+   - themes should indicate unclear or invalid feedback
+   - summary should explain that the feedback is unclear
+   - keyIssue should indicate insufficient information
+   - recommendation should request clearer feedback.
 
-Do not use Markdown.
-Do not include anything outside the JSON.
+7. Do not invent information that is not present
+   in the customer's feedback.
+
+Return only the requested structured JSON response.
 `;
 
 
     // =================================================
-    // GEMINI REQUEST
+    // GEMINI REQUEST WITH RETRY
     // =================================================
 
-    const response = await ai.models.generateContent({
+    const MAX_RETRIES = 3;
 
-      model: "gemini-3.6-flash",
-
-      contents: prompt,
-
-      config: {
-        temperature: 0.2,
-
-        responseMimeType: "application/json",
-      },
-
-    });
+    let response = null;
 
 
-    console.log("Gemini response received.");
+    for (
+      let attempt = 1;
+      attempt <= MAX_RETRIES;
+      attempt++
+    ) {
+
+      try {
+
+        console.log(
+          `Gemini request attempt ${attempt}/${MAX_RETRIES}...`
+        );
+
+
+        response = await ai.models.generateContent({
+
+          // -------------------------------------------
+          // STABLE FLASH MODEL
+          // -------------------------------------------
+
+          model: "gemini-2.5-flash",
+
+          contents: prompt,
+
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: feedbackAnalysisSchema,
+          },
+
+        });
+
+
+        console.log(
+          "Gemini response received."
+        );
+
+
+        // -------------------------------------------
+        // SUCCESS
+        // -------------------------------------------
+
+        break;
+
+
+      } catch (error) {
+
+        const errorMessage =
+          error?.message || "";
+
+
+        console.error(
+          `Gemini attempt ${attempt} failed:`
+        );
+
+        console.error(
+          errorMessage
+        );
+
+
+        // -------------------------------------------
+        // CHECK TEMPORARY ERROR
+        // -------------------------------------------
+
+        const isTemporaryError =
+          errorMessage.includes("503") ||
+          errorMessage.includes("UNAVAILABLE") ||
+          errorMessage.includes("overloaded") ||
+          errorMessage.includes("429") ||
+          errorMessage.includes("RESOURCE_EXHAUSTED");
+
+
+        // -------------------------------------------
+        // NON-RETRYABLE ERROR
+        // -------------------------------------------
+
+        if (!isTemporaryError) {
+
+          throw error;
+
+        }
+
+
+        // -------------------------------------------
+        // LAST ATTEMPT FAILED
+        // -------------------------------------------
+
+        if (attempt === MAX_RETRIES) {
+
+          throw new Error(
+            "Gemini AI is temporarily unavailable. Please try again in a moment."
+          );
+
+        }
+
+
+        // -------------------------------------------
+        // EXPONENTIAL BACKOFF
+        // -------------------------------------------
+
+        const delay =
+          1000 * Math.pow(2, attempt - 1);
+
+
+        console.log(
+          `Retrying Gemini in ${delay}ms...`
+        );
+
+
+        await new Promise(
+          (resolve) =>
+            setTimeout(resolve, delay)
+        );
+
+      }
+
+    }
+
+
+    // =================================================
+    // MAKE SURE RESPONSE EXISTS
+    // =================================================
+
+    if (!response) {
+
+      throw new Error(
+        "Gemini did not return a response."
+      );
+
+    }
 
 
     // =================================================
     // GET RESPONSE TEXT
     // =================================================
 
-    const responseText = response.text;
+    const responseText =
+      response.text;
 
 
     if (!responseText) {
@@ -127,7 +321,8 @@ Do not include anything outside the JSON.
 
     try {
 
-      analysis = JSON.parse(responseText);
+      analysis =
+        JSON.parse(responseText);
 
     } catch (parseError) {
 
@@ -135,7 +330,9 @@ Do not include anything outside the JSON.
         "Gemini returned invalid JSON:"
       );
 
-      console.error(responseText);
+      console.error(
+        responseText
+      );
 
       throw new Error(
         "Gemini returned invalid JSON."
@@ -145,29 +342,93 @@ Do not include anything outside the JSON.
 
 
     // =================================================
-    // RETURN CLEAN DATA
+    // VALIDATE SENTIMENT
     // =================================================
 
-    return {
+    const allowedSentiments = [
+      "positive",
+      "negative",
+      "neutral",
+    ];
 
-      sentiment:
-        analysis.sentiment || "neutral",
 
-      themes:
-        Array.isArray(analysis.themes)
-          ? analysis.themes
-          : [],
+    const sentiment =
+      allowedSentiments.includes(
+        analysis.sentiment
+      )
+        ? analysis.sentiment
+        : "neutral";
+
+
+    // =================================================
+    // CLEAN THEMES
+    // =================================================
+
+    const themes =
+      Array.isArray(
+        analysis.themes
+      )
+        ? analysis.themes
+            .filter(
+              (theme) =>
+                typeof theme === "string"
+            )
+            .map(
+              (theme) =>
+                theme.trim()
+            )
+            .filter(Boolean)
+        : [];
+
+
+    // =================================================
+    // CLEAN RESULT
+    // =================================================
+
+    const result = {
+
+      sentiment,
+
+      themes,
 
       summary:
-        analysis.summary || "",
+        typeof analysis.summary === "string"
+          ? analysis.summary.trim()
+          : "",
 
       keyIssue:
-        analysis.keyIssue || "",
+        typeof analysis.keyIssue === "string"
+          ? analysis.keyIssue.trim()
+          : "",
 
       recommendation:
-        analysis.recommendation || "",
+        typeof analysis.recommendation === "string"
+          ? analysis.recommendation.trim()
+          : "",
 
     };
+
+
+    // =================================================
+    // LOG RESULT
+    // =================================================
+
+    console.log(
+      "AI analysis completed successfully."
+    );
+
+    console.log(
+      "AI Analysis:",
+      result
+    );
+
+
+    // =================================================
+    // RETURN RESULT
+    // =================================================
+
+    return result;
+
 
   } catch (error) {
 
@@ -175,14 +436,24 @@ Do not include anything outside the JSON.
       "========== GEMINI ERROR =========="
     );
 
-    console.error(error);
+    console.error(
+      "Message:",
+      error.message
+    );
+
+    console.error(
+      "Full Error:",
+      error
+    );
 
     console.error(
       "=================================="
     );
 
     throw error;
+
   }
+
 };
 
 
@@ -193,4 +464,3 @@ Do not include anything outside the JSON.
 export {
   analyzeFeedbackWithAI,
 };
-

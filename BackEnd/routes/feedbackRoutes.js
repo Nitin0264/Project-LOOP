@@ -1,9 +1,15 @@
 import express from "express";
+
 import { Feedback } from "../model/feedback.js";
 
 import {
   analyzeFeedbackWithAI,
 } from "../services/aiService.js";
+
+import {
+  authMiddleware,
+} from "../middleware/authMiddleware.js";
+
 
 const feedbackRoutes = express.Router();
 
@@ -12,509 +18,662 @@ const feedbackRoutes = express.Router();
 // CREATE FEEDBACK + AI ANALYSIS
 // =====================================================
 
-feedbackRoutes.post("/", async (req, res) => {
-  try {
-    const {
-      customerName,
-      customerEmail,
-      message,
-      source,
-    } = req.body;
+feedbackRoutes.post(
+  "/",
+  authMiddleware,
+  async (req, res) => {
+
+    try {
+
+      const {
+        customerName,
+        customerEmail,
+        message,
+        source,
+      } = req.body;
 
 
-    // ---------------------------------------------
-    // Validate required fields
-    // ---------------------------------------------
+      // ---------------------------------------------
+      // Validate required fields
+      // ---------------------------------------------
 
-    if (!customerName || !message) {
-      return res.status(400).json({
-        message:
-          "Customer name and feedback message are required",
+      if (!customerName || !message) {
+
+        return res.status(400).json({
+          success: false,
+          message:
+            "Customer name and feedback message are required",
+        });
+
+      }
+
+
+      // ---------------------------------------------
+      // Send feedback to Gemini
+      // ---------------------------------------------
+
+      console.log(
+        "Analyzing feedback with Gemini..."
+      );
+
+
+      const aiAnalysis =
+        await analyzeFeedbackWithAI(message);
+
+
+      // ---------------------------------------------
+      // Create feedback document
+      // ---------------------------------------------
+
+      const feedback = new Feedback({
+
+        customerName,
+
+        customerEmail,
+
+        message,
+
+        source:
+          source || "manual",
+
+        sentiment:
+          aiAnalysis.sentiment,
+
+        themes:
+          aiAnalysis.themes,
+
+        summary:
+          aiAnalysis.summary,
+
+        keyIssue:
+          aiAnalysis.keyIssue,
+
+        recommendation:
+          aiAnalysis.recommendation,
+
       });
+
+
+      // ---------------------------------------------
+      // Save to MongoDB
+      // ---------------------------------------------
+
+      const savedFeedback =
+        await feedback.save();
+
+
+      // ---------------------------------------------
+      // Send response
+      // ---------------------------------------------
+
+      return res.status(201).json({
+
+        success: true,
+
+        message:
+          "Feedback submitted and analyzed successfully",
+
+        feedback:
+          savedFeedback,
+
+      });
+
+    } catch (error) {
+
+      console.error(
+        "Feedback creation error:",
+        error
+      );
+
+
+      return res.status(500).json({
+
+        success: false,
+
+        message:
+          "Failed to create feedback",
+
+        error:
+          error.message,
+
+      });
+
     }
 
-
-    // ---------------------------------------------
-    // Send feedback to Gemini
-    // ---------------------------------------------
-
-    console.log(
-      "Analyzing feedback with Gemini..."
-    );
-
-    const aiAnalysis =
-      await analyzeFeedbackWithAI(message);
-
-
-    // ---------------------------------------------
-    // Create feedback document
-    // ---------------------------------------------
-
-    const feedback = new Feedback({
-
-      customerName,
-
-      customerEmail,
-
-      message,
-
-      source: source || "manual",
-
-      sentiment:
-        aiAnalysis.sentiment,
-
-      themes:
-        aiAnalysis.themes,
-
-      summary:
-        aiAnalysis.summary,
-
-      keyIssue:
-        aiAnalysis.keyIssue,
-
-      recommendation:
-        aiAnalysis.recommendation,
-    });
-
-
-    // ---------------------------------------------
-    // Save to MongoDB
-    // ---------------------------------------------
-
-    const savedFeedback =
-      await feedback.save();
-
-
-    // ---------------------------------------------
-    // Send response
-    // ---------------------------------------------
-
-    res.status(201).json({
-
-      message:
-        "Feedback submitted and analyzed successfully",
-
-      feedback:
-        savedFeedback,
-
-    });
-
-  } catch (error) {
-
-    console.error(
-      "Feedback creation error:",
-      error
-    );
-
-    res.status(500).json({
-
-      message:
-        "Failed to create feedback",
-
-      error:
-        error.message,
-
-    });
   }
-});
+);
 
 
 // =====================================================
 // GET ALL FEEDBACK
 // =====================================================
 
-feedbackRoutes.get("/", async (req, res) => {
-  try {
+feedbackRoutes.get(
+  "/",
+  authMiddleware,
+  async (req, res) => {
 
-    const feedbacks =
-      await Feedback.find()
-        .sort({
-          createdAt: -1,
+    try {
+
+      const feedbacks =
+        await Feedback.find()
+          .sort({
+            createdAt: -1,
+          });
+
+
+      return res.status(200).json({
+
+        success: true,
+
+        feedbacks,
+
+      });
+
+    } catch (error) {
+
+      console.error(
+        "Get feedback error:",
+        error
+      );
+
+
+      return res.status(500).json({
+
+        success: false,
+
+        message:
+          "Failed to fetch feedback",
+
+        error:
+          error.message,
+
+      });
+
+    }
+
+  }
+);
+
+
+// =====================================================
+// GET FEEDBACK ANALYTICS
+// =====================================================
+
+feedbackRoutes.get(
+  "/analytics",
+  authMiddleware,
+  async (req, res) => {
+
+    try {
+
+      // ---------------------------------------------
+      // Get total feedback
+      // ---------------------------------------------
+
+      const totalFeedback =
+        await Feedback.countDocuments();
+
+
+      // ---------------------------------------------
+      // Sentiment counts
+      // ---------------------------------------------
+
+      const positive =
+        await Feedback.countDocuments({
+          sentiment: "positive",
         });
 
 
-    res.status(200).json({
-      feedbacks,
-    });
+      const negative =
+        await Feedback.countDocuments({
+          sentiment: "negative",
+        });
 
-  } catch (error) {
 
-    console.error(
-      "Get feedback error:",
-      error
-    );
+      const neutral =
+        await Feedback.countDocuments({
+          sentiment: "neutral",
+        });
 
-    res.status(500).json({
-      message:
-        "Failed to fetch feedback",
-    });
+
+      // ---------------------------------------------
+      // Get all feedback for theme analysis
+      // ---------------------------------------------
+
+      const feedbacks =
+        await Feedback.find();
+
+
+      // ---------------------------------------------
+      // Count themes
+      // ---------------------------------------------
+
+      const themeMap = {};
+
+
+      feedbacks.forEach(
+        (feedback) => {
+
+          if (
+            Array.isArray(
+              feedback.themes
+            )
+          ) {
+
+            feedback.themes.forEach(
+              (theme) => {
+
+                if (!theme) {
+                  return;
+                }
+
+
+                const normalizedTheme =
+                  theme.trim();
+
+
+                if (!normalizedTheme) {
+                  return;
+                }
+
+
+                themeMap[
+                  normalizedTheme
+                ] =
+                  (themeMap[
+                    normalizedTheme
+                  ] || 0) + 1;
+
+              }
+            );
+
+          }
+
+        }
+      );
+
+
+      // ---------------------------------------------
+      // Convert themes to array
+      // ---------------------------------------------
+
+      const themes =
+        Object.entries(themeMap)
+          .map(
+            ([theme, count]) => ({
+              theme,
+              count,
+            })
+          )
+          .sort(
+            (a, b) =>
+              b.count - a.count
+          );
+
+
+      // ---------------------------------------------
+      // Recent feedback
+      // ---------------------------------------------
+
+      const recentFeedback =
+        await Feedback.find()
+          .sort({
+            createdAt: -1,
+          })
+          .limit(5);
+
+
+      // ---------------------------------------------
+      // Send analytics
+      // ---------------------------------------------
+
+      return res.status(200).json({
+
+        success: true,
+
+        totalFeedback,
+
+        sentiment: {
+
+          positive,
+
+          negative,
+
+          neutral,
+
+        },
+
+        themes,
+
+        recentFeedback,
+
+      });
+
+    } catch (error) {
+
+      console.error(
+        "Analytics error:",
+        error
+      );
+
+
+      return res.status(500).json({
+
+        success: false,
+
+        message:
+          "Failed to fetch analytics",
+
+        error:
+          error.message,
+
+      });
+
+    }
+
   }
-});
-
-
-// =====================================================
-// GET DASHBOARD ANALYTICS
-// =====================================================
-
-feedbackRoutes.get("/analytics", async (req, res) => {
-  try {
-
-    // ---------------------------------------------
-    // Total feedback
-    // ---------------------------------------------
-
-    const totalFeedback =
-      await Feedback.countDocuments();
-
-
-    // ---------------------------------------------
-    // Sentiment counts
-    // ---------------------------------------------
-
-    const positiveFeedback =
-      await Feedback.countDocuments({
-        sentiment: "positive",
-      });
-
-    const negativeFeedback =
-      await Feedback.countDocuments({
-        sentiment: "negative",
-      });
-
-    const neutralFeedback =
-      await Feedback.countDocuments({
-        sentiment: "neutral",
-      });
-
-
-    // ---------------------------------------------
-    // Theme statistics
-    // ---------------------------------------------
-
-    const themeStats =
-      await Feedback.aggregate([
-
-        {
-          $unwind: {
-            path: "$themes",
-            preserveNullAndEmptyArrays: false,
-          },
-        },
-
-        {
-          $group: {
-            _id: "$themes",
-
-            count: {
-              $sum: 1,
-            },
-          },
-        },
-
-        {
-          $sort: {
-            count: -1,
-          },
-        },
-
-        {
-          $limit: 10,
-        },
-
-      ]);
-
-
-    // ---------------------------------------------
-    // Recent feedback
-    // ---------------------------------------------
-
-    const recentFeedback =
-      await Feedback.find()
-        .sort({
-          createdAt: -1,
-        })
-        .limit(5);
-
-
-    // ---------------------------------------------
-    // Send analytics response
-    // ---------------------------------------------
-
-    res.status(200).json({
-
-      totalFeedback,
-
-      sentiment: {
-
-        positive:
-          positiveFeedback,
-
-        negative:
-          negativeFeedback,
-
-        neutral:
-          neutralFeedback,
-
-      },
-
-      themes:
-        themeStats.map((item) => ({
-
-          theme:
-            item._id,
-
-          count:
-            item.count,
-
-        })),
-
-      recentFeedback,
-
-    });
-
-  } catch (error) {
-
-    console.error(
-      "Feedback analytics error:",
-      error
-    );
-
-    res.status(500).json({
-
-      message:
-        "Failed to generate feedback analytics",
-
-      error:
-        error.message,
-
-    });
-  }
-});
+);
 
 
 // =====================================================
 // GET SINGLE FEEDBACK
 // =====================================================
 
-// Currently disabled because we are not using
-// the individual feedback route at this stage.
+feedbackRoutes.get(
+  "/:id",
+  authMiddleware,
+  async (req, res) => {
 
-// feedbackRoutes.get("/:id", async (req, res) => {
-//   try {
+    try {
 
-//     const feedback =
-//       await Feedback.findById(
-//         req.params.id
-//       );
+      const feedback =
+        await Feedback.findById(
+          req.params.id
+        );
 
-//     if (!feedback) {
-//       return res.status(404).json({
-//         message:
-//           "Feedback not found",
-//       });
-//     }
 
-//     res.status(200).json({
-//       feedback,
-//     });
+      if (!feedback) {
 
-//   } catch (error) {
+        return res.status(404).json({
 
-//     console.error(
-//       "Get single feedback error:",
-//       error
-//     );
+          success: false,
 
-//     res.status(500).json({
-//       message:
-//         "Failed to fetch feedback",
-//     });
-//   }
-// });
+          message:
+            "Feedback not found",
+
+        });
+
+      }
+
+
+      return res.status(200).json({
+
+        success: true,
+
+        feedback,
+
+      });
+
+    } catch (error) {
+
+      console.error(
+        "Get single feedback error:",
+        error
+      );
+
+
+      return res.status(500).json({
+
+        success: false,
+
+        message:
+          "Failed to fetch feedback",
+
+        error:
+          error.message,
+
+      });
+
+    }
+
+  }
+);
 
 
 // =====================================================
 // UPDATE FEEDBACK
 // =====================================================
 
-feedbackRoutes.put("/:id", async (req, res) => {
-  try {
+feedbackRoutes.put(
+  "/:id",
+  authMiddleware,
+  async (req, res) => {
 
-    const {
-      customerName,
-      customerEmail,
-      message,
-      source,
-    } = req.body;
+    try {
 
-
-    const feedback =
-      await Feedback.findById(
-        req.params.id
-      );
+      const {
+        customerName,
+        customerEmail,
+        message,
+        source,
+      } = req.body;
 
 
-    if (!feedback) {
-      return res.status(404).json({
-        message:
-          "Feedback not found",
-      });
-    }
+      // ---------------------------------------------
+      // Find feedback
+      // ---------------------------------------------
 
-
-    // ---------------------------------------------
-    // If message changes, analyze it again
-    // ---------------------------------------------
-
-    if (
-      message &&
-      message !== feedback.message
-    ) {
-
-      console.log(
-        "Re-analyzing updated feedback..."
-      );
-
-
-      const aiAnalysis =
-        await analyzeFeedbackWithAI(
-          message
+      const feedback =
+        await Feedback.findById(
+          req.params.id
         );
 
 
-      feedback.sentiment =
-        aiAnalysis.sentiment;
+      if (!feedback) {
 
-      feedback.themes =
-        aiAnalysis.themes;
+        return res.status(404).json({
 
-      feedback.summary =
-        aiAnalysis.summary;
+          success: false,
 
-      feedback.keyIssue =
-        aiAnalysis.keyIssue;
+          message:
+            "Feedback not found",
 
-      feedback.recommendation =
-        aiAnalysis.recommendation;
+        });
 
-      feedback.message =
-        message;
+      }
+
+
+      // ---------------------------------------------
+      // Re-analyze if message changes
+      // ---------------------------------------------
+
+      if (
+        message &&
+        message !== feedback.message
+      ) {
+
+        console.log(
+          "Re-analyzing updated feedback..."
+        );
+
+
+        const aiAnalysis =
+          await analyzeFeedbackWithAI(
+            message
+          );
+
+
+        feedback.sentiment =
+          aiAnalysis.sentiment;
+
+
+        feedback.themes =
+          aiAnalysis.themes;
+
+
+        feedback.summary =
+          aiAnalysis.summary;
+
+
+        feedback.keyIssue =
+          aiAnalysis.keyIssue;
+
+
+        feedback.recommendation =
+          aiAnalysis.recommendation;
+
+
+        feedback.message =
+          message;
+
+      }
+
+
+      // ---------------------------------------------
+      // Update normal fields
+      // ---------------------------------------------
+
+      if (customerName) {
+
+        feedback.customerName =
+          customerName;
+
+      }
+
+
+      if (customerEmail) {
+
+        feedback.customerEmail =
+          customerEmail;
+
+      }
+
+
+      if (source) {
+
+        feedback.source =
+          source;
+
+      }
+
+
+      // ---------------------------------------------
+      // Save updated feedback
+      // ---------------------------------------------
+
+      const updatedFeedback =
+        await feedback.save();
+
+
+      return res.status(200).json({
+
+        success: true,
+
+        message:
+          "Feedback updated successfully",
+
+        feedback:
+          updatedFeedback,
+
+      });
+
+    } catch (error) {
+
+      console.error(
+        "Update feedback error:",
+        error
+      );
+
+
+      return res.status(500).json({
+
+        success: false,
+
+        message:
+          "Failed to update feedback",
+
+        error:
+          error.message,
+
+      });
+
     }
 
-
-    // ---------------------------------------------
-    // Update normal fields
-    // ---------------------------------------------
-
-    if (customerName) {
-
-      feedback.customerName =
-        customerName;
-
-    }
-
-
-    if (customerEmail) {
-
-      feedback.customerEmail =
-        customerEmail;
-
-    }
-
-
-    if (source) {
-
-      feedback.source =
-        source;
-
-    }
-
-
-    // ---------------------------------------------
-    // Save updated feedback
-    // ---------------------------------------------
-
-    const updatedFeedback =
-      await feedback.save();
-
-
-    res.status(200).json({
-
-      message:
-        "Feedback updated successfully",
-
-      feedback:
-        updatedFeedback,
-
-    });
-
-  } catch (error) {
-
-    console.error(
-      "Update feedback error:",
-      error
-    );
-
-    res.status(500).json({
-
-      message:
-        "Failed to update feedback",
-
-      error:
-        error.message,
-
-    });
   }
-});
+);
 
 
 // =====================================================
 // DELETE FEEDBACK
 // =====================================================
 
-feedbackRoutes.delete("/:id", async (req, res) => {
-  try {
+feedbackRoutes.delete(
+  "/:id",
+  authMiddleware,
+  async (req, res) => {
 
-    const deletedFeedback =
-      await Feedback.findByIdAndDelete(
-        req.params.id
+    try {
+
+      const deletedFeedback =
+        await Feedback.findByIdAndDelete(
+          req.params.id
+        );
+
+
+      if (!deletedFeedback) {
+
+        return res.status(404).json({
+
+          success: false,
+
+          message:
+            "Feedback not found",
+
+        });
+
+      }
+
+
+      return res.status(200).json({
+
+        success: true,
+
+        message:
+          "Feedback deleted successfully",
+
+      });
+
+    } catch (error) {
+
+      console.error(
+        "Delete feedback error:",
+        error
       );
 
 
-    if (!deletedFeedback) {
+      return res.status(500).json({
 
-      return res.status(404).json({
+        success: false,
 
         message:
-          "Feedback not found",
+          "Failed to delete feedback",
+
+        error:
+          error.message,
 
       });
 
     }
 
-
-    res.status(200).json({
-
-      message:
-        "Feedback deleted successfully",
-
-    });
-
-  } catch (error) {
-
-    console.error(
-      "Delete feedback error:",
-      error
-    );
-
-    res.status(500).json({
-
-      message:
-        "Failed to delete feedback",
-
-    });
   }
-});
+);
 
 
-export { feedbackRoutes };
+// =====================================================
+// EXPORT
+// =====================================================
+
+export {
+  feedbackRoutes,
+};

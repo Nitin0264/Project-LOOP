@@ -1,11 +1,13 @@
-import mongoose from 'mongoose'
+import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
+      minlength: 2,
+      maxlength: 100,
     },
 
     email: {
@@ -13,26 +15,26 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
       lowercase: true,
-      trim: true
+      trim: true,
     },
 
     password: {
       type: String,
       required: true,
-      minlength: 6
+      minlength: 6,
     },
 
     role: {
       type: String,
-      enum: ['admin', 'manager', 'member'],
-      default: 'member'
-    }
+      enum: ["admin", "manager", "member"],
+      default: "member",
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
-)
+);
 
-const User = mongoose.model('User', userSchema)
+const User = mongoose.model("User", userSchema);
 
-export { User }
+export { User };
