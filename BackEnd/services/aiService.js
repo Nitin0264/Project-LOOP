@@ -422,9 +422,6 @@ Return only the requested structured JSON response.
       result
     );
 
-
-    // =================================================
-    // RETURN RESULT
     // =================================================
 
     return result;
@@ -456,10 +453,6 @@ Return only the requested structured JSON response.
 
 };
 
-
-// =====================================================
-// EXPORT
-// =====================================================
 
 export {
   analyzeFeedbackWithAI,
