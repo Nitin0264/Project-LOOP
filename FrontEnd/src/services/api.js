@@ -8,15 +8,17 @@ const api = async (endpoint, options = {}) => {
     ...(options.headers || {}),
   };
 
-  // Attach JWT token to protected requests
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  const response = await fetch(
+    `${API_BASE_URL}${endpoint}`,
+    {
+      ...options,
+      headers,
+    }
+  );
 
   let data;
 
@@ -34,4 +36,3 @@ const api = async (endpoint, options = {}) => {
 };
 
 export default api;
-

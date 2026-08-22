@@ -4,6 +4,7 @@ import { Feedback } from "../model/feedback.js";
 
 import {
   analyzeFeedbackWithAI,
+  askFeedbackAI,
 } from "../services/aiService.js";
 
 import {
@@ -33,10 +34,6 @@ feedbackRoutes.post(
       } = req.body;
 
 
-      // ---------------------------------------------
-      // Validate required fields
-      // ---------------------------------------------
-
       if (!customerName || !message) {
 
         return res.status(400).json({
@@ -48,10 +45,6 @@ feedbackRoutes.post(
       }
 
 
-      // ---------------------------------------------
-      // Send feedback to Gemini
-      // ---------------------------------------------
-
       console.log(
         "Analyzing feedback with Gemini..."
       );
@@ -60,10 +53,6 @@ feedbackRoutes.post(
       const aiAnalysis =
         await analyzeFeedbackWithAI(message);
 
-
-      // ---------------------------------------------
-      // Create feedback document
-      // ---------------------------------------------
 
       const feedback = new Feedback({
 
@@ -94,17 +83,9 @@ feedbackRoutes.post(
       });
 
 
-      // ---------------------------------------------
-      // Save to MongoDB
-      // ---------------------------------------------
-
       const savedFeedback =
         await feedback.save();
 
-
-      // ---------------------------------------------
-      // Send response
-      // ---------------------------------------------
 
       return res.status(201).json({
 
@@ -207,17 +188,9 @@ feedbackRoutes.get(
 
     try {
 
-      // ---------------------------------------------
-      // Get total feedback
-      // ---------------------------------------------
-
       const totalFeedback =
         await Feedback.countDocuments();
 
-
-      // ---------------------------------------------
-      // Sentiment counts
-      // ---------------------------------------------
 
       const positive =
         await Feedback.countDocuments({
@@ -237,17 +210,9 @@ feedbackRoutes.get(
         });
 
 
-      // ---------------------------------------------
-      // Get all feedback for theme analysis
-      // ---------------------------------------------
-
       const feedbacks =
         await Feedback.find();
 
-
-      // ---------------------------------------------
-      // Count themes
-      // ---------------------------------------------
 
       const themeMap = {};
 
@@ -294,10 +259,6 @@ feedbackRoutes.get(
       );
 
 
-      // ---------------------------------------------
-      // Convert themes to array
-      // ---------------------------------------------
-
       const themes =
         Object.entries(themeMap)
           .map(
@@ -312,10 +273,6 @@ feedbackRoutes.get(
           );
 
 
-      // ---------------------------------------------
-      // Recent feedback
-      // ---------------------------------------------
-
       const recentFeedback =
         await Feedback.find()
           .sort({
@@ -323,10 +280,6 @@ feedbackRoutes.get(
           })
           .limit(5);
 
-
-      // ---------------------------------------------
-      // Send analytics
-      // ---------------------------------------------
 
       return res.status(200).json({
 
@@ -367,6 +320,134 @@ feedbackRoutes.get(
 
         error:
           error.message,
+
+      });
+
+    }
+
+  }
+);
+
+
+// =====================================================
+// ASK AI ABOUT CUSTOMER FEEDBACK
+// IMPORTANT: KEEP THIS BEFORE /:id
+// =====================================================
+
+feedbackRoutes.post(
+  "/ask-ai",
+  authMiddleware,
+  async (req, res) => {
+
+    try {
+
+      const {
+        question,
+      } = req.body;
+
+
+      // ---------------------------------------------
+      // Validate question
+      // ---------------------------------------------
+
+      if (
+        !question ||
+        typeof question !== "string" ||
+        !question.trim()
+      ) {
+
+        return res.status(400).json({
+
+          success: false,
+
+          message:
+            "AI question is required",
+
+        });
+
+      }
+
+
+      console.log(
+        "Ask AI request received."
+      );
+
+      console.log(
+        "Question:",
+        question.trim()
+      );
+
+
+      // ---------------------------------------------
+      // Get feedback data
+      // ---------------------------------------------
+
+      const feedbacks =
+        await Feedback.find()
+          .sort({
+            createdAt: -1,
+          });
+
+
+      // ---------------------------------------------
+      // Check feedback availability
+      // ---------------------------------------------
+
+      if (
+        !Array.isArray(feedbacks) ||
+        feedbacks.length === 0
+      ) {
+
+        return res.status(200).json({
+
+          success: true,
+
+          answer:
+            "There is not enough customer feedback data available yet. Please add some feedback before asking AI for business insights.",
+
+        });
+
+      }
+
+
+      // ---------------------------------------------
+      // Ask Gemini
+      // ---------------------------------------------
+
+      const answer =
+        await askFeedbackAI(
+          question.trim(),
+          feedbacks
+        );
+
+
+      // ---------------------------------------------
+      // Send response
+      // ---------------------------------------------
+
+      return res.status(200).json({
+
+        success: true,
+
+        answer,
+
+      });
+
+    } catch (error) {
+
+      console.error(
+        "Ask AI route error:",
+        error
+      );
+
+
+      return res.status(500).json({
+
+        success: false,
+
+        message:
+          error.message ||
+          "Failed to get AI answer",
 
       });
 
@@ -460,10 +541,6 @@ feedbackRoutes.put(
       } = req.body;
 
 
-      // ---------------------------------------------
-      // Find feedback
-      // ---------------------------------------------
-
       const feedback =
         await Feedback.findById(
           req.params.id
@@ -483,10 +560,6 @@ feedbackRoutes.put(
 
       }
 
-
-      // ---------------------------------------------
-      // Re-analyze if message changes
-      // ---------------------------------------------
 
       if (
         message &&
@@ -530,10 +603,6 @@ feedbackRoutes.put(
       }
 
 
-      // ---------------------------------------------
-      // Update normal fields
-      // ---------------------------------------------
-
       if (customerName) {
 
         feedback.customerName =
@@ -557,10 +626,6 @@ feedbackRoutes.put(
 
       }
 
-
-      // ---------------------------------------------
-      // Save updated feedback
-      // ---------------------------------------------
 
       const updatedFeedback =
         await feedback.save();
@@ -677,3 +742,4 @@ feedbackRoutes.delete(
 export {
   feedbackRoutes,
 };
+

@@ -28,7 +28,7 @@ const ai = new GoogleGenAI({
 
 
 // =====================================================
-// AI RESPONSE SCHEMA
+// FEEDBACK ANALYSIS SCHEMA
 // =====================================================
 
 const feedbackAnalysisSchema = {
@@ -76,14 +76,14 @@ const feedbackAnalysisSchema = {
 
 
 // =====================================================
-// ANALYZE FEEDBACK WITH AI
+// ANALYZE CUSTOMER FEEDBACK
 // =====================================================
 
 const analyzeFeedbackWithAI = async (message) => {
   try {
 
     // =================================================
-    // VALIDATE FEEDBACK
+    // VALIDATE MESSAGE
     // =================================================
 
     if (!message || typeof message !== "string") {
@@ -99,6 +99,7 @@ const analyzeFeedbackWithAI = async (message) => {
         "Feedback message cannot be empty."
       );
     }
+
 
     console.log(
       "Sending feedback to Gemini..."
@@ -170,7 +171,6 @@ Return only the requested structured JSON response.
 
     let response = null;
 
-
     for (
       let attempt = 1;
       attempt <= MAX_RETRIES;
@@ -183,12 +183,7 @@ Return only the requested structured JSON response.
           `Gemini request attempt ${attempt}/${MAX_RETRIES}...`
         );
 
-
         response = await ai.models.generateContent({
-
-          // -------------------------------------------
-          // CURRENT GEMINI FLASH MODEL
-          // -------------------------------------------
 
           model: "gemini-3.6-flash",
 
@@ -196,30 +191,23 @@ Return only the requested structured JSON response.
 
           config: {
             responseMimeType: "application/json",
+
             responseSchema:
               feedbackAnalysisSchema,
           },
 
         });
 
-
         console.log(
           "Gemini response received."
         );
 
-
-        // -------------------------------------------
-        // SUCCESS
-        // -------------------------------------------
-
         break;
-
 
       } catch (error) {
 
         const errorMessage =
           error?.message || "";
-
 
         console.error(
           `Gemini attempt ${attempt} failed:`
@@ -229,10 +217,6 @@ Return only the requested structured JSON response.
           errorMessage
         );
 
-
-        // -------------------------------------------
-        // CHECK TEMPORARY ERROR
-        // -------------------------------------------
 
         const isTemporaryError =
           errorMessage.includes("503") ||
@@ -244,31 +228,17 @@ Return only the requested structured JSON response.
           );
 
 
-        // -------------------------------------------
-        // NON-RETRYABLE ERROR
-        // -------------------------------------------
-
         if (!isTemporaryError) {
           throw error;
         }
 
 
-        // -------------------------------------------
-        // LAST ATTEMPT FAILED
-        // -------------------------------------------
-
         if (attempt === MAX_RETRIES) {
-
           throw new Error(
             "Gemini AI is temporarily unavailable. Please try again in a moment."
           );
-
         }
 
-
-        // -------------------------------------------
-        // EXPONENTIAL BACKOFF
-        // -------------------------------------------
 
         const delay =
           1000 * Math.pow(
@@ -289,39 +259,29 @@ Return only the requested structured JSON response.
               delay
             )
         );
-
       }
-
     }
 
 
     // =================================================
-    // MAKE SURE RESPONSE EXISTS
+    // VALIDATE RESPONSE
     // =================================================
 
     if (!response) {
-
       throw new Error(
         "Gemini did not return a response."
       );
-
     }
 
-
-    // =================================================
-    // GET RESPONSE TEXT
-    // =================================================
 
     const responseText =
       response.text;
 
 
     if (!responseText) {
-
       throw new Error(
         "Gemini returned an empty response."
       );
-
     }
 
 
@@ -336,7 +296,7 @@ Return only the requested structured JSON response.
       analysis =
         JSON.parse(responseText);
 
-    } catch (parseError) {
+    } catch (error) {
 
       console.error(
         "Gemini returned invalid JSON:"
@@ -349,7 +309,6 @@ Return only the requested structured JSON response.
       throw new Error(
         "Gemini returned invalid JSON."
       );
-
     }
 
 
@@ -421,10 +380,6 @@ Return only the requested structured JSON response.
     };
 
 
-    // =================================================
-    // LOG RESULT
-    // =================================================
-
     console.log(
       "AI analysis completed successfully."
     );
@@ -436,7 +391,6 @@ Return only the requested structured JSON response.
 
 
     return result;
-
 
   } catch (error) {
 
@@ -459,13 +413,357 @@ Return only the requested structured JSON response.
     );
 
     throw error;
-
   }
-
 };
 
+
+// =====================================================
+// ASK AI ABOUT CUSTOMER FEEDBACK
+// =====================================================
+
+const askFeedbackAI = async (
+  question,
+  feedbacks
+) => {
+
+  try {
+
+    // =================================================
+    // VALIDATE QUESTION
+    // =================================================
+
+    if (
+      !question ||
+      typeof question !== "string"
+    ) {
+      throw new Error(
+        "AI question is required."
+      );
+    }
+
+
+    const cleanQuestion =
+      question.trim();
+
+
+    if (!cleanQuestion) {
+      throw new Error(
+        "AI question cannot be empty."
+      );
+    }
+
+
+    // =================================================
+    // VALIDATE FEEDBACK DATA
+    // =================================================
+
+    if (!Array.isArray(feedbacks)) {
+      throw new Error(
+        "Feedback data must be an array."
+      );
+    }
+
+
+    // =================================================
+    // PREPARE FEEDBACK DATA
+    // =================================================
+
+    const feedbackData =
+      feedbacks.map(
+        (feedback, index) => ({
+
+          id: index + 1,
+
+          customerName:
+            feedback.customerName ||
+            "Unknown",
+
+          source:
+            feedback.source ||
+            "Unknown",
+
+          message:
+            feedback.message ||
+            "",
+
+          sentiment:
+            feedback.sentiment ||
+            "neutral",
+
+          themes:
+            Array.isArray(
+              feedback.themes
+            )
+              ? feedback.themes
+              : [],
+
+          summary:
+            feedback.summary ||
+            "",
+
+          keyIssue:
+            feedback.keyIssue ||
+            "",
+
+          recommendation:
+            feedback.recommendation ||
+            "",
+
+        })
+      );
+
+
+    // =================================================
+    // CONVERT FEEDBACK TO JSON
+    // =================================================
+
+    const feedbackJSON =
+      JSON.stringify(
+        feedbackData,
+        null,
+        2
+      );
+
+
+    // =================================================
+    // PROMPT
+    // =================================================
+
+    const prompt = `
+You are the AI business intelligence assistant for Project LOOP.
+
+You help businesses understand their customer feedback.
+
+The following customer feedback data is available:
+
+${feedbackJSON}
+
+The user has asked:
+
+"${cleanQuestion}"
+
+Answer the user's question using ONLY the customer feedback data provided above.
+
+IMPORTANT RULES:
+
+1. Do not invent customer feedback.
+
+2. Do not make claims that cannot be supported
+   by the provided data.
+
+3. If there is not enough information to answer
+   the question, clearly say that there is not
+   enough data.
+
+4. Look for meaningful patterns across:
+
+   - sentiment
+   - themes
+   - customer messages
+   - summaries
+   - key issues
+   - recommendations
+
+5. Give practical business-oriented insights
+   whenever the available data supports them.
+
+6. Keep the answer clear and easy to understand.
+
+7. If the user asks for a recommendation,
+   base it directly on the feedback patterns.
+
+8. Do not mention internal IDs.
+
+9. Do not pretend to know information outside
+   the provided feedback.
+
+Return a concise but useful answer.
+`;
+
+
+    // =================================================
+    // GEMINI REQUEST
+    // =================================================
+
+    console.log(
+      "Sending AI business question to Gemini..."
+    );
+
+
+    const MAX_RETRIES = 3;
+
+    let response = null;
+
+
+    for (
+      let attempt = 1;
+      attempt <= MAX_RETRIES;
+      attempt++
+    ) {
+
+      try {
+
+        console.log(
+          `AI question attempt ${attempt}/${MAX_RETRIES}...`
+        );
+
+
+        response =
+          await ai.models.generateContent({
+
+            model:
+              "gemini-3.6-flash",
+
+            contents:
+              prompt,
+
+          });
+
+
+        console.log(
+          "AI business response received."
+        );
+
+
+        break;
+
+      } catch (error) {
+
+        const errorMessage =
+          error?.message || "";
+
+
+        console.error(
+          `AI question attempt ${attempt} failed:`
+        );
+
+        console.error(
+          errorMessage
+        );
+
+
+        const isTemporaryError =
+          errorMessage.includes("503") ||
+          errorMessage.includes("UNAVAILABLE") ||
+          errorMessage.includes("overloaded") ||
+          errorMessage.includes("429") ||
+          errorMessage.includes(
+            "RESOURCE_EXHAUSTED"
+          );
+
+
+        if (!isTemporaryError) {
+          throw error;
+        }
+
+
+        if (
+          attempt === MAX_RETRIES
+        ) {
+
+          throw new Error(
+            "Gemini AI is temporarily unavailable. Please try again in a moment."
+          );
+
+        }
+
+
+        const delay =
+          1000 *
+          Math.pow(
+            2,
+            attempt - 1
+          );
+
+
+        console.log(
+          `Retrying AI question in ${delay}ms...`
+        );
+
+
+        await new Promise(
+          (resolve) =>
+            setTimeout(
+              resolve,
+              delay
+            )
+        );
+      }
+    }
+
+
+    // =================================================
+    // VALIDATE RESPONSE
+    // =================================================
+
+    if (!response) {
+
+      throw new Error(
+        "Gemini did not return an answer."
+      );
+
+    }
+
+
+    const answer =
+      response.text;
+
+
+    if (!answer) {
+
+      throw new Error(
+        "Gemini returned an empty answer."
+      );
+
+    }
+
+
+    // =================================================
+    // CLEAN ANSWER
+    // =================================================
+
+    const cleanAnswer =
+      answer.trim();
+
+
+    console.log(
+      "AI question answered successfully."
+    );
+
+
+    return cleanAnswer;
+
+
+  } catch (error) {
+
+    console.error(
+      "========== AI QUESTION ERROR =========="
+    );
+
+    console.error(
+      "Message:",
+      error.message
+    );
+
+    console.error(
+      "Full Error:",
+      error
+    );
+
+    console.error(
+      "========================================"
+    );
+
+    throw error;
+  }
+};
+
+
+// =====================================================
+// EXPORT
+// =====================================================
 
 export {
   analyzeFeedbackWithAI,
+  askFeedbackAI,
 };
-
