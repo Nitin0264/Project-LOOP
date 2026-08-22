@@ -18,6 +18,10 @@ import {
 function Dashboard() {
   const navigate = useNavigate();
 
+  // =====================================================
+  // STATE
+  // =====================================================
+
   const [analytics, setAnalytics] = useState({
     totalFeedback: 0,
 
@@ -35,66 +39,62 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // ==================================================
+  // =====================================================
   // FETCH ANALYTICS
-  // ==================================================
+  // =====================================================
 
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
       setError("");
 
-      // api.js automatically handles the JWT token
       const data = await api("/feedback/analytics");
 
-      console.log("Analytics response:", data);
+      console.log("Dashboard analytics response:", data);
 
-      if (!data?.success) {
+      // ---------------------------------------------------
+      // AUTHENTICATION ERROR
+      // ---------------------------------------------------
+
+      if (data.status === 401) {
+        setError("Your session has expired. Please login again.");
+        return;
+      }
+
+      // ---------------------------------------------------
+      // API ERROR
+      // ---------------------------------------------------
+
+      if (!data.ok || data.success === false) {
         throw new Error(
-          data?.message || "Unable to load dashboard analytics."
+          data.message || "Unable to load dashboard analytics."
         );
       }
 
-      /*
-        Expected backend response:
-
-        {
-          success: true,
-          analytics: {
-            totalFeedback,
-            sentiment,
-            themes,
-            recentFeedback
-          }
-        }
-
-        We also keep a fallback in case your controller
-        returns the analytics fields directly.
-      */
+      // ---------------------------------------------------
+      // SUPPORT BOTH POSSIBLE API RESPONSE STRUCTURES
+      // ---------------------------------------------------
 
       const analyticsData = data.analytics || data;
+
+      // ---------------------------------------------------
+      // STORE ANALYTICS
+      // ---------------------------------------------------
 
       setAnalytics({
         totalFeedback: analyticsData?.totalFeedback || 0,
 
         sentiment: {
-          positive:
-            analyticsData?.sentiment?.positive || 0,
-
-          negative:
-            analyticsData?.sentiment?.negative || 0,
-
-          neutral:
-            analyticsData?.sentiment?.neutral || 0,
+          positive: analyticsData?.sentiment?.positive || 0,
+          negative: analyticsData?.sentiment?.negative || 0,
+          neutral: analyticsData?.sentiment?.neutral || 0,
         },
 
         themes: Array.isArray(analyticsData?.themes)
           ? analyticsData.themes
           : [],
 
-        recentFeedback: Array.isArray(
-          analyticsData?.recentFeedback
-        )
+        recentFeedback: Array.isArray(analyticsData?.recentFeedback)
           ? analyticsData.recentFeedback
           : [],
       });
@@ -102,55 +102,49 @@ function Dashboard() {
       console.error("Analytics fetch error:", error);
 
       setError(
-        error?.message ||
-          "Unable to load dashboard analytics."
+        error.message || "Unable to load dashboard analytics."
       );
     } finally {
       setLoading(false);
     }
   };
 
-  // ==================================================
-  // LOAD DASHBOARD
-  // ==================================================
+  // =====================================================
+  // INITIAL LOAD
+  // =====================================================
 
   useEffect(() => {
     fetchAnalytics();
   }, []);
 
-  // ==================================================
-  // SENTIMENT DATA
-  // ==================================================
+  // =====================================================
+  // SENTIMENT VALUES
+  // =====================================================
 
   const total = analytics?.totalFeedback || 0;
 
-  const positive =
-    analytics?.sentiment?.positive || 0;
+  const positive = analytics?.sentiment?.positive || 0;
 
-  const negative =
-    analytics?.sentiment?.negative || 0;
+  const negative = analytics?.sentiment?.negative || 0;
 
-  const neutral =
-    analytics?.sentiment?.neutral || 0;
+  const neutral = analytics?.sentiment?.neutral || 0;
+
+  // =====================================================
+  // PERCENTAGES
+  // =====================================================
 
   const positivePercentage =
-    total > 0
-      ? Math.round((positive / total) * 100)
-      : 0;
+    total > 0 ? Math.round((positive / total) * 100) : 0;
 
   const negativePercentage =
-    total > 0
-      ? Math.round((negative / total) * 100)
-      : 0;
+    total > 0 ? Math.round((negative / total) * 100) : 0;
 
   const neutralPercentage =
-    total > 0
-      ? Math.round((neutral / total) * 100)
-      : 0;
+    total > 0 ? Math.round((neutral / total) * 100) : 0;
 
-  // ==================================================
-  // SENTIMENT CHART DATA
-  // ==================================================
+  // =====================================================
+  // CHART DATA
+  // =====================================================
 
   const sentimentChartData = [
     {
@@ -167,16 +161,17 @@ function Dashboard() {
     },
   ];
 
-  // ==================================================
-  // THEME CHART DATA
-  // ==================================================
-
-  const themeChartData = Array.isArray(
-    analytics?.themes
-  )
+  const themeChartData = Array.isArray(analytics?.themes)
     ? analytics.themes.map((item) => ({
-        name: item?.theme || "Unknown",
-        count: item?.count || 0,
+        name:
+          typeof item === "string"
+            ? item
+            : item?.theme || "Unknown",
+
+        count:
+          typeof item === "string"
+            ? 1
+            : item?.count || 0,
       }))
     : [];
 
@@ -186,9 +181,9 @@ function Dashboard() {
     "#eab308",
   ];
 
-  // ==================================================
+  // =====================================================
   // LOADING
-  // ==================================================
+  // =====================================================
 
   if (loading) {
     return (
@@ -206,17 +201,17 @@ function Dashboard() {
     );
   }
 
-  // ==================================================
+  // =====================================================
   // DASHBOARD
-  // ==================================================
+  // =====================================================
 
   return (
     <div className="min-h-screen bg-gray-950 px-6 py-10 text-white sm:px-8 lg:px-12">
       <div className="mx-auto max-w-7xl">
 
-        {/* ==================================================
+        {/* =================================================
             HEADER
-        ================================================== */}
+        ================================================= */}
 
         <div className="mb-10">
           <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-blue-400">
@@ -224,7 +219,6 @@ function Dashboard() {
           </p>
 
           <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-
             <div>
               <h1 className="text-3xl font-bold sm:text-4xl">
                 Analytics Dashboard
@@ -239,12 +233,9 @@ function Dashboard() {
             {/* ACTION BUTTONS */}
 
             <div className="flex flex-wrap items-center gap-3">
-
               <button
                 type="button"
-                onClick={() =>
-                  navigate("/add-feedback")
-                }
+                onClick={() => navigate("/add-feedback")}
                 className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
               >
                 <span className="text-xl leading-none">
@@ -262,24 +253,33 @@ function Dashboard() {
               >
                 Refresh Analytics
               </button>
-
             </div>
           </div>
         </div>
 
-        {/* ==================================================
+        {/* =================================================
             ERROR
-        ================================================== */}
+        ================================================= */}
 
         {error && (
-          <div className="mb-8 rounded-xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-400">
-            {error}
+          <div className="mb-8 flex flex-col gap-4 rounded-xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-400 sm:flex-row sm:items-center sm:justify-between">
+            <span>{error}</span>
+
+            {error.includes("session") && (
+              <button
+                type="button"
+                onClick={() => navigate("/login")}
+                className="w-fit rounded-lg bg-red-500/10 px-4 py-2 font-semibold text-red-300 transition hover:bg-red-500/20"
+              >
+                Login Again
+              </button>
+            )}
           </div>
         )}
 
-        {/* ==================================================
+        {/* =================================================
             STAT CARDS
-        ================================================== */}
+        ================================================= */}
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
 
@@ -370,19 +370,17 @@ function Dashboard() {
               {neutralPercentage}% of total feedback
             </p>
           </div>
-
         </div>
 
-        {/* ==================================================
+        {/* =================================================
             CHART SECTION
-        ================================================== */}
+        ================================================= */}
 
         <div className="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
 
           {/* SENTIMENT BAR CHART */}
 
           <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg sm:p-7">
-
             <div className="mb-7">
               <h2 className="text-xl font-semibold">
                 Sentiment Distribution
@@ -437,20 +435,13 @@ function Dashboard() {
 
                   <Bar
                     dataKey="value"
-                    radius={[
-                      8,
-                      8,
-                      0,
-                      0,
-                    ]}
+                    radius={[8, 8, 0, 0]}
                   >
                     {sentimentChartData.map(
                       (entry, index) => (
                         <Cell
                           key={`cell-${index}`}
-                          fill={
-                            pieColors[index]
-                          }
+                          fill={pieColors[index]}
                         />
                       )
                     )}
@@ -463,7 +454,6 @@ function Dashboard() {
           {/* SENTIMENT PIE CHART */}
 
           <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg sm:p-7">
-
             <div className="mb-7">
               <h2 className="text-xl font-semibold">
                 Sentiment Breakdown
@@ -480,7 +470,6 @@ function Dashboard() {
                 height="100%"
               >
                 <PieChart>
-
                   <Pie
                     data={sentimentChartData}
                     dataKey="value"
@@ -495,9 +484,7 @@ function Dashboard() {
                       (entry, index) => (
                         <Cell
                           key={`pie-${index}`}
-                          fill={
-                            pieColors[index]
-                          }
+                          fill={pieColors[index]}
                         />
                       )
                     )}
@@ -511,13 +498,11 @@ function Dashboard() {
                       color: "#fff",
                     }}
                   />
-
                 </PieChart>
               </ResponsiveContainer>
             </div>
 
             <div className="mt-2 grid grid-cols-3 gap-3">
-
               <div className="rounded-xl bg-gray-950 p-3 text-center">
                 <div className="mx-auto mb-2 h-2.5 w-2.5 rounded-full bg-green-500" />
 
@@ -553,18 +538,15 @@ function Dashboard() {
                   {neutralPercentage}%
                 </p>
               </div>
-
             </div>
           </div>
-
         </div>
 
-        {/* ==================================================
+        {/* =================================================
             THEME ANALYTICS
-        ================================================== */}
+        ================================================= */}
 
         <div className="mt-8 rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg sm:p-7">
-
           <div className="mb-7">
             <h2 className="text-xl font-semibold">
               AI Feedback Themes
@@ -615,9 +597,7 @@ function Dashboard() {
                     stroke="#9ca3af"
                     tickLine={false}
                     axisLine={false}
-                    tick={{
-                      fontSize: 12,
-                    }}
+                    tick={{ fontSize: 12 }}
                   />
 
                   <Tooltip
@@ -632,28 +612,20 @@ function Dashboard() {
                   <Bar
                     dataKey="count"
                     fill="#3b82f6"
-                    radius={[
-                      0,
-                      8,
-                      8,
-                      0,
-                    ]}
+                    radius={[0, 8, 8, 0]}
                   />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           )}
-
         </div>
 
-        {/* ==================================================
+        {/* =================================================
             AI INSIGHTS
-        ================================================== */}
+        ================================================= */}
 
         <div className="mt-8 rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg sm:p-7">
-
           <div className="mb-7 flex items-center gap-3">
-
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 font-bold text-blue-400">
               AI
             </div>
@@ -667,7 +639,6 @@ function Dashboard() {
                 Quick intelligence from your feedback data.
               </p>
             </div>
-
           </div>
 
           <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
@@ -675,7 +646,6 @@ function Dashboard() {
             {/* FEEDBACK VOLUME */}
 
             <div className="rounded-xl border border-gray-800 bg-gray-950 p-5">
-
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Feedback Volume
               </p>
@@ -687,89 +657,97 @@ function Dashboard() {
               <p className="mt-2 text-sm leading-6 text-gray-500">
                 Total feedback entries analyzed by Project LOOP.
               </p>
-
             </div>
 
             {/* DOMINANT SENTIMENT */}
 
             <div className="rounded-xl border border-gray-800 bg-gray-950 p-5">
-
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Dominant Sentiment
               </p>
 
               <p className="mt-3 text-2xl font-bold capitalize">
-
-                {positive >= negative &&
-                positive >= neutral
+                {total === 0
+                  ? "No Data"
+                  : positive >= negative &&
+                    positive >= neutral
                   ? "Positive"
                   : negative >= positive &&
                     negative >= neutral
                   ? "Negative"
                   : "Neutral"}
-
               </p>
 
               <p className="mt-2 text-sm leading-6 text-gray-500">
                 Based on current AI sentiment analysis.
               </p>
-
             </div>
 
             {/* TOP THEME */}
 
             <div className="rounded-xl border border-gray-800 bg-gray-950 p-5">
-
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Top Theme
               </p>
 
               <p className="mt-3 text-2xl font-bold capitalize">
                 {analytics?.themes?.[0]?.theme ||
-                  "No data"}
+                  (typeof analytics?.themes?.[0] === "string"
+                    ? analytics.themes[0]
+                    : "No data")}
               </p>
 
               <p className="mt-2 text-sm leading-6 text-gray-500">
                 Most frequently detected feedback topic.
               </p>
-
             </div>
-
           </div>
         </div>
 
-        {/* ==================================================
+        {/* =================================================
             RECENT FEEDBACK
-        ================================================== */}
+        ================================================= */}
 
         <div className="mt-8 rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg sm:p-7">
+          <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-xl font-semibold">
+                Recent Feedback
+              </h2>
 
-          <div className="mb-7">
-            <h2 className="text-xl font-semibold">
-              Recent Feedback
-            </h2>
-
-            <p className="mt-2 text-sm text-gray-500">
-              Latest customer feedback analyzed by AI.
-            </p>
-          </div>
-
-          {!Array.isArray(
-            analytics?.recentFeedback
-          ) ||
-          analytics.recentFeedback.length === 0 ? (
-
-            <div className="rounded-xl border border-gray-800 bg-gray-950 p-10 text-center text-sm text-gray-500">
-              No recent feedback available.
+              <p className="mt-2 text-sm text-gray-500">
+                Latest customer feedback analyzed by AI.
+              </p>
             </div>
 
+            <button
+              type="button"
+              onClick={() => navigate("/feedback")}
+              className="w-fit rounded-xl border border-gray-700 px-4 py-2.5 text-sm font-medium text-gray-300 transition hover:border-blue-500 hover:bg-gray-800 hover:text-white"
+            >
+              View All Feedback
+            </button>
+          </div>
+
+          {!Array.isArray(analytics?.recentFeedback) ||
+          analytics.recentFeedback.length === 0 ? (
+            <div className="rounded-xl border border-gray-800 bg-gray-950 p-10 text-center">
+              <p className="text-sm text-gray-500">
+                No recent feedback available.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => navigate("/add-feedback")}
+                className="mt-4 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+              >
+                Add First Feedback
+              </button>
+            </div>
           ) : (
-
             <div className="space-y-4">
-
               {analytics.recentFeedback.map(
                 (feedback, index) => (
-
                   <div
                     key={
                       feedback?._id ||
@@ -777,11 +755,8 @@ function Dashboard() {
                     }
                     className="rounded-xl border border-gray-800 bg-gray-950 p-5 transition hover:border-gray-700"
                   >
-
                     <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-
-                      <div>
-
+                      <div className="min-w-0">
                         <h3 className="font-semibold text-white">
                           {feedback?.customerName ||
                             "Anonymous"}
@@ -791,7 +766,6 @@ function Dashboard() {
                           {feedback?.message ||
                             "No message content."}
                         </p>
-
                       </div>
 
                       <span
@@ -808,22 +782,10 @@ function Dashboard() {
                         {feedback?.sentiment ||
                           "unknown"}
                       </span>
-
                     </div>
-
-                    {/* SOURCE */}
-
-                    {feedback?.source && (
-                      <p className="mt-3 text-xs text-gray-600">
-                        Source: {feedback.source}
-                      </p>
-                    )}
-
-                    {/* AI SUMMARY */}
 
                     {feedback?.summary && (
                       <div className="mt-4 border-t border-gray-800 pt-4">
-
                         <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                           AI Summary
                         </p>
@@ -831,53 +793,16 @@ function Dashboard() {
                         <p className="mt-2 text-sm leading-6 text-gray-400">
                           {feedback.summary}
                         </p>
-
                       </div>
                     )}
-
-                    {/* KEY ISSUE */}
-
-                    {feedback?.keyIssue && (
-                      <div className="mt-4 border-t border-gray-800 pt-4">
-
-                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                          Key Issue
-                        </p>
-
-                        <p className="mt-2 text-sm leading-6 text-gray-400">
-                          {feedback.keyIssue}
-                        </p>
-
-                      </div>
-                    )}
-
-                    {/* RECOMMENDATION */}
-
-                    {feedback?.recommendation && (
-                      <div className="mt-4 border-t border-gray-800 pt-4">
-
-                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                          Recommendation
-                        </p>
-
-                        <p className="mt-2 text-sm leading-6 text-gray-400">
-                          {feedback.recommendation}
-                        </p>
-
-                      </div>
-                    )}
-
                   </div>
-
                 )
               )}
-
             </div>
-
           )}
-
         </div>
 
+        <div className="h-12" />
       </div>
     </div>
   );

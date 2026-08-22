@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../services/api";
 
 function AddFeedbackPage() {
 
@@ -48,17 +49,15 @@ function AddFeedbackPage() {
     try {
 
       // =================================================
-      // GET JWT TOKEN
+      // CHECK JWT TOKEN
       // =================================================
 
       const token = localStorage.getItem("token");
 
-      console.log("Token found:", !!token);
-
-
-      // =================================================
-      // CHECK LOGIN
-      // =================================================
+      console.log(
+        "Add Feedback - Token found:",
+        !!token
+      );
 
       if (!token) {
 
@@ -66,26 +65,22 @@ function AddFeedbackPage() {
           "You are not logged in. Please login first."
         );
 
+        navigate("/login", {
+          replace: true,
+        });
+
         return;
       }
 
 
       // =================================================
-      // SEND FEEDBACK TO BACKEND
+      // SEND FEEDBACK USING CENTRAL API
       // =================================================
 
-      const response = await fetch(
-        "http://localhost:5000/feedback",
+      const data = await api(
+        "/feedback",
         {
           method: "POST",
-
-          headers: {
-            "Content-Type": "application/json",
-
-            // IMPORTANT:
-            // Send JWT token to protected backend route
-            Authorization: `Bearer ${token}`,
-          },
 
           body: JSON.stringify(feedback),
         }
@@ -93,11 +88,8 @@ function AddFeedbackPage() {
 
 
       // =================================================
-      // READ RESPONSE
+      // LOG RESPONSE
       // =================================================
-
-      const data = await response.json();
-
 
       console.log(
         "Feedback API response:",
@@ -106,18 +98,46 @@ function AddFeedbackPage() {
 
 
       // =================================================
-      // HANDLE API ERROR
+      // HANDLE AUTHENTICATION ERROR
       // =================================================
 
-      if (!response.ok) {
+      if (
+        data.status === 401 ||
+        data.message ===
+          "Authentication required."
+      ) {
+
+        console.error(
+          "Authentication failed while submitting feedback."
+        );
 
         setError(
+          "Your login session has expired. Please login again."
+        );
+
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+
+        navigate("/login", {
+          replace: true,
+        });
+
+        return;
+      }
+
+
+      // =================================================
+      // HANDLE OTHER API ERRORS
+      // =================================================
+
+      if (!data.ok || !data.success) {
+
+        throw new Error(
           data.message ||
           data.error ||
           "Unable to save feedback."
         );
 
-        return;
       }
 
 
@@ -161,6 +181,7 @@ function AddFeedbackPage() {
       );
 
       setError(
+        error.message ||
         "Unable to connect to the server. Please try again."
       );
 
@@ -182,6 +203,7 @@ function AddFeedbackPage() {
     <div className="min-h-screen bg-gray-950 text-white px-6 py-10 md:px-10 lg:px-12">
 
       <div className="max-w-4xl mx-auto">
+
 
         {/* =================================================
             HEADER
@@ -216,6 +238,7 @@ function AddFeedbackPage() {
             onSubmit={handleSubmit}
             className="flex flex-col gap-7"
           >
+
 
             {/* =================================================
                 ERROR MESSAGE
@@ -427,3 +450,4 @@ function AddFeedbackPage() {
 }
 
 export default AddFeedbackPage;
+

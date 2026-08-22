@@ -37,11 +37,16 @@ const feedbackAnalysisSchema = {
   properties: {
     sentiment: {
       type: Type.STRING,
-      enum: ["positive", "negative", "neutral"],
+      enum: [
+        "positive",
+        "negative",
+        "neutral",
+      ],
     },
 
     themes: {
       type: Type.ARRAY,
+
       items: {
         type: Type.STRING,
       },
@@ -182,16 +187,17 @@ Return only the requested structured JSON response.
         response = await ai.models.generateContent({
 
           // -------------------------------------------
-          // STABLE FLASH MODEL
+          // CURRENT GEMINI FLASH MODEL
           // -------------------------------------------
 
-          model: "gemini-2.5-flash",
+          model: "gemini-3.6-flash",
 
           contents: prompt,
 
           config: {
             responseMimeType: "application/json",
-            responseSchema: feedbackAnalysisSchema,
+            responseSchema:
+              feedbackAnalysisSchema,
           },
 
         });
@@ -233,7 +239,9 @@ Return only the requested structured JSON response.
           errorMessage.includes("UNAVAILABLE") ||
           errorMessage.includes("overloaded") ||
           errorMessage.includes("429") ||
-          errorMessage.includes("RESOURCE_EXHAUSTED");
+          errorMessage.includes(
+            "RESOURCE_EXHAUSTED"
+          );
 
 
         // -------------------------------------------
@@ -241,9 +249,7 @@ Return only the requested structured JSON response.
         // -------------------------------------------
 
         if (!isTemporaryError) {
-
           throw error;
-
         }
 
 
@@ -265,7 +271,10 @@ Return only the requested structured JSON response.
         // -------------------------------------------
 
         const delay =
-          1000 * Math.pow(2, attempt - 1);
+          1000 * Math.pow(
+            2,
+            attempt - 1
+          );
 
 
         console.log(
@@ -275,7 +284,10 @@ Return only the requested structured JSON response.
 
         await new Promise(
           (resolve) =>
-            setTimeout(resolve, delay)
+            setTimeout(
+              resolve,
+              delay
+            )
         );
 
       }
@@ -422,7 +434,6 @@ Return only the requested structured JSON response.
       result
     );
 
-    // =================================================
 
     return result;
 
@@ -457,3 +468,4 @@ Return only the requested structured JSON response.
 export {
   analyzeFeedbackWithAI,
 };
+

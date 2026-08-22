@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import api from "../services/api";
 
 function FeedbackPage() {
   // =====================================================
@@ -35,17 +36,25 @@ function FeedbackPage() {
       setFetching(true);
       setError("");
 
-      const response = await fetch("http://localhost:5000/feedback");
-      const data = await response.json();
+      const data = await api("/feedback");
 
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to fetch feedback");
+      if (!data.ok) {
+        throw new Error(
+          data.message || "Failed to fetch feedback"
+        );
       }
 
-      setFeedbacks(data.feedbacks || []);
+      setFeedbacks(
+        Array.isArray(data.feedbacks)
+          ? data.feedbacks
+          : []
+      );
     } catch (error) {
       console.error("Fetch feedback error:", error);
-      setError(error.message || "Unable to load feedback.");
+
+      setError(
+        error.message || "Unable to load feedback."
+      );
     } finally {
       setFetching(false);
     }
@@ -84,18 +93,15 @@ function FeedbackPage() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/feedback", {
+      const data = await api("/feedback", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify(formData),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to submit feedback");
+      if (!data.ok) {
+        throw new Error(
+          data.message || "Failed to submit feedback"
+        );
       }
 
       setMessage(
@@ -109,10 +115,14 @@ function FeedbackPage() {
         source: "website",
       });
 
+      // Refresh feedback list using authenticated API helper
       await fetchFeedbacks();
     } catch (error) {
       console.error("Submit feedback error:", error);
-      setError(error.message || "Unable to submit feedback.");
+
+      setError(
+        error.message || "Unable to submit feedback."
+      );
     } finally {
       setLoading(false);
     }
@@ -135,21 +145,25 @@ function FeedbackPage() {
       setMessage("");
       setError("");
 
-      const response = await fetch(`http://localhost:5000/feedback/${id}`, {
+      const data = await api(`/feedback/${id}`, {
         method: "DELETE",
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to delete feedback");
+      if (!data.ok) {
+        throw new Error(
+          data.message || "Failed to delete feedback"
+        );
       }
 
       setMessage("Feedback deleted successfully.");
+
       await fetchFeedbacks();
     } catch (error) {
       console.error("Delete feedback error:", error);
-      setError(error.message || "Unable to delete feedback.");
+
+      setError(
+        error.message || "Unable to delete feedback."
+      );
     }
   };
 
@@ -188,9 +202,14 @@ function FeedbackPage() {
 
     if (search) {
       results = results.filter((feedback) => {
-        const customerName = feedback.customerName?.toLowerCase() || "";
-        const customerEmail = feedback.customerEmail?.toLowerCase() || "";
-        const feedbackMessage = feedback.message?.toLowerCase() || "";
+        const customerName =
+          feedback.customerName?.toLowerCase() || "";
+
+        const customerEmail =
+          feedback.customerEmail?.toLowerCase() || "";
+
+        const feedbackMessage =
+          feedback.message?.toLowerCase() || "";
 
         return (
           customerName.includes(search) ||
@@ -206,7 +225,9 @@ function FeedbackPage() {
 
     if (sentimentFilter !== "all") {
       results = results.filter(
-        (feedback) => feedback.sentiment?.toLowerCase() === sentimentFilter
+        (feedback) =>
+          feedback.sentiment?.toLowerCase() ===
+          sentimentFilter
       );
     }
 
@@ -216,7 +237,9 @@ function FeedbackPage() {
 
     if (sourceFilter !== "all") {
       results = results.filter(
-        (feedback) => feedback.source?.toLowerCase() === sourceFilter
+        (feedback) =>
+          feedback.source?.toLowerCase() ===
+          sourceFilter
       );
     }
 
@@ -225,8 +248,13 @@ function FeedbackPage() {
     // ---------------------------------------------
 
     return results.sort((a, b) => {
-      const dateA = new Date(a.createdAt || 0).getTime();
-      const dateB = new Date(b.createdAt || 0).getTime();
+      const dateA = new Date(
+        a.createdAt || 0
+      ).getTime();
+
+      const dateB = new Date(
+        b.createdAt || 0
+      ).getTime();
 
       if (sortOrder === "newest") {
         return dateB - dateA;
@@ -260,6 +288,7 @@ function FeedbackPage() {
   return (
     <div className="min-h-screen bg-gray-950 px-5 py-10 text-white sm:px-8 md:px-10 lg:px-12">
       <div className="mx-auto max-w-7xl">
+
         {/* =================================================
             HEADER
         ================================================= */}
@@ -305,7 +334,9 @@ function FeedbackPage() {
 
         <div className="mb-12 rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-xl sm:p-8 lg:p-9">
           <div className="mb-8">
-            <h2 className="text-2xl font-semibold">Submit Feedback</h2>
+            <h2 className="text-2xl font-semibold">
+              Submit Feedback
+            </h2>
 
             <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-400">
               Your feedback will automatically be analyzed by Project LOOP AI.
@@ -314,6 +345,7 @@ function FeedbackPage() {
 
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+
               {/* Customer Name */}
 
               <div>
@@ -397,7 +429,9 @@ function FeedbackPage() {
                 disabled={loading}
                 className="w-full rounded-xl bg-blue-600 px-7 py-3.5 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               >
-                {loading ? "Analyzing..." : "Submit Feedback"}
+                {loading
+                  ? "Analyzing..."
+                  : "Submit Feedback"}
               </button>
             </div>
           </form>
@@ -409,7 +443,9 @@ function FeedbackPage() {
 
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-2xl font-semibold">Feedback Management</h2>
+            <h2 className="text-2xl font-semibold">
+              Feedback Management
+            </h2>
 
             <p className="mt-2 text-sm leading-6 text-gray-400">
               Search, filter and manage your AI-analyzed customer feedback.
@@ -435,6 +471,7 @@ function FeedbackPage() {
 
         <div className="mb-8 rounded-2xl border border-gray-800 bg-gray-900 p-5 shadow-lg sm:p-6">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+
             {/* Search */}
 
             <div className="lg:col-span-5">
@@ -450,7 +487,9 @@ function FeedbackPage() {
                 <input
                   type="text"
                   value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
+                  onChange={(event) =>
+                    setSearchTerm(event.target.value)
+                  }
                   placeholder="Search name, email or feedback..."
                   className="w-full rounded-xl border border-gray-700 bg-gray-950 py-3.5 pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                 />
@@ -466,7 +505,9 @@ function FeedbackPage() {
 
               <select
                 value={sentimentFilter}
-                onChange={(event) => setSentimentFilter(event.target.value)}
+                onChange={(event) =>
+                  setSentimentFilter(event.target.value)
+                }
                 className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3.5 text-sm text-white outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
               >
                 <option value="all">All Sentiments</option>
@@ -485,7 +526,9 @@ function FeedbackPage() {
 
               <select
                 value={sourceFilter}
-                onChange={(event) => setSourceFilter(event.target.value)}
+                onChange={(event) =>
+                  setSourceFilter(event.target.value)
+                }
                 className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3.5 text-sm text-white outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
               >
                 <option value="all">All Sources</option>
@@ -506,7 +549,9 @@ function FeedbackPage() {
 
               <select
                 value={sortOrder}
-                onChange={(event) => setSortOrder(event.target.value)}
+                onChange={(event) =>
+                  setSortOrder(event.target.value)
+                }
                 className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3.5 text-sm text-white outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
               >
                 <option value="newest">Newest First</option>
@@ -567,15 +612,16 @@ function FeedbackPage() {
                   key={feedback._id}
                   className="rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg transition hover:border-gray-700 sm:p-7"
                 >
-                  {/* =================================================
-                      TOP ROW
-                  ================================================= */}
+
+                  {/* TOP ROW */}
 
                   <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-3">
+
                         <h3 className="text-lg font-semibold text-white">
-                          {feedback.customerName || "Unknown Customer"}
+                          {feedback.customerName ||
+                            "Unknown Customer"}
                         </h3>
 
                         <span
@@ -603,7 +649,9 @@ function FeedbackPage() {
                     <div className="flex items-center gap-3">
                       {feedback.createdAt && (
                         <span className="hidden text-xs text-gray-600 sm:block">
-                          {new Date(feedback.createdAt).toLocaleDateString(
+                          {new Date(
+                            feedback.createdAt
+                          ).toLocaleDateString(
                             "en-IN",
                             {
                               day: "2-digit",
@@ -616,7 +664,9 @@ function FeedbackPage() {
 
                       <button
                         type="button"
-                        onClick={() => handleDelete(feedback._id)}
+                        onClick={() =>
+                          handleDelete(feedback._id)
+                        }
                         className="rounded-lg border border-red-500/20 px-3.5 py-2 text-xs font-medium text-red-400 transition hover:bg-red-500/10"
                       >
                         Delete
@@ -624,9 +674,7 @@ function FeedbackPage() {
                     </div>
                   </div>
 
-                  {/* =================================================
-                      ORIGINAL FEEDBACK
-                  ================================================= */}
+                  {/* ORIGINAL FEEDBACK */}
 
                   <div className="mt-6 rounded-xl border border-gray-800 bg-gray-950 p-5">
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -638,9 +686,7 @@ function FeedbackPage() {
                     </p>
                   </div>
 
-                  {/* =================================================
-                      AI ANALYSIS
-                  ================================================= */}
+                  {/* AI ANALYSIS */}
 
                   <div className="mt-7">
                     <div className="mb-5 flex items-center gap-3">
@@ -661,24 +707,27 @@ function FeedbackPage() {
 
                     {/* Themes */}
 
-                    {feedback.themes && feedback.themes.length > 0 && (
-                      <div className="mb-5">
-                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                          Main Themes
-                        </p>
+                    {feedback.themes &&
+                      feedback.themes.length > 0 && (
+                        <div className="mb-5">
+                          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Main Themes
+                          </p>
 
-                        <div className="flex flex-wrap gap-2">
-                          {feedback.themes.map((theme, index) => (
-                            <span
-                              key={`${theme}-${index}`}
-                              className="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1.5 text-xs text-blue-400"
-                            >
-                              {theme}
-                            </span>
-                          ))}
+                          <div className="flex flex-wrap gap-2">
+                            {feedback.themes.map(
+                              (theme, index) => (
+                                <span
+                                  key={`${theme}-${index}`}
+                                  className="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1.5 text-xs text-blue-400"
+                                >
+                                  {theme}
+                                </span>
+                              )
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
                     {/* Summary */}
 
