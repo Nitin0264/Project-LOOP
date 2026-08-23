@@ -1,365 +1,573 @@
-import React from "react";
-import {
-  Link,
-  useNavigate,
-} from "react-router-dom";
-
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../services/api";
 
 function AdminDashboard() {
   const navigate = useNavigate();
 
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    adminUsers: 0,
+    managerUsers: 0,
+    memberUsers: 0,
+  });
+
+  const [users, setUsers] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [actionLoading, setActionLoading] = useState("");
 
   // =====================================================
-  // USER
+  // FETCH ADMIN DATA
   // =====================================================
 
-  let user = null;
+  const fetchAdminData = async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-  try {
-    user = JSON.parse(
-      localStorage.getItem("user")
-    );
-  } catch {
-    user = null;
-  }
+      const [statsResponse, usersResponse] =
+        await Promise.all([
+          api("/admin/stats"),
+          api("/admin/users"),
+        ]);
 
+      console.log(
+        "Admin stats:",
+        statsResponse
+      );
 
-  // =====================================================
-  // LOGOUT
-  // =====================================================
+      console.log(
+        "Admin users:",
+        usersResponse
+      );
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+      // -------------------------------------------------
+      // AUTH ERROR
+      // -------------------------------------------------
 
-    navigate("/login", {
-      replace: true,
-    });
+      if (
+        statsResponse.status === 401 ||
+        statsResponse.status === 403 ||
+        usersResponse.status === 401 ||
+        usersResponse.status === 403
+      ) {
+        setError(
+          "You do not have permission to access the admin panel."
+        );
+
+        return;
+      }
+
+      // -------------------------------------------------
+      // API ERROR
+      // -------------------------------------------------
+
+      if (
+        !statsResponse.ok ||
+        !statsResponse.success
+      ) {
+        throw new Error(
+          statsResponse.message ||
+            "Unable to load admin statistics."
+        );
+      }
+
+      if (
+        !usersResponse.ok ||
+        !usersResponse.success
+      ) {
+        throw new Error(
+          usersResponse.message ||
+            "Unable to load users."
+        );
+      }
+
+      // -------------------------------------------------
+      // SAVE DATA
+      // -------------------------------------------------
+
+      setStats(
+        statsResponse.stats || {
+          totalUsers: 0,
+          adminUsers: 0,
+          managerUsers: 0,
+          memberUsers: 0,
+        }
+      );
+
+      setUsers(
+        Array.isArray(usersResponse.users)
+          ? usersResponse.users
+          : []
+      );
+    } catch (error) {
+      console.error(
+        "Admin dashboard error:",
+        error
+      );
+
+      setError(
+        error.message ||
+          "Unable to load admin dashboard."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // =====================================================
+  // INITIAL LOAD
+  // =====================================================
+
+  useEffect(() => {
+    fetchAdminData();
+  }, []);
 
   // =====================================================
-  // ADMIN DASHBOARD
+  // UPDATE ROLE
+  // =====================================================
+
+  const handleRoleChange = async (
+    userId,
+    newRole
+  ) => {
+    try {
+      setActionLoading(userId);
+      setError("");
+
+      const response = await api(
+        `/admin/users/${userId}/role`,
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            role: newRole,
+          }),
+        }
+      );
+
+      if (!response.ok || !response.success) {
+        throw new Error(
+          response.message ||
+            "Unable to update user role."
+        );
+      }
+
+      await fetchAdminData();
+    } catch (error) {
+      console.error(
+        "Role update error:",
+        error
+      );
+
+      setError(
+        error.message ||
+          "Unable to update user role."
+      );
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  // =====================================================
+  // DELETE USER
+  // =====================================================
+
+  const handleDeleteUser = async (
+    userId,
+    userName
+  ) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete ${userName}?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setActionLoading(userId);
+      setError("");
+
+      const response = await api(
+        `/admin/users/${userId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok || !response.success) {
+        throw new Error(
+          response.message ||
+            "Unable to delete user."
+        );
+      }
+
+      await fetchAdminData();
+    } catch (error) {
+      console.error(
+        "Delete user error:",
+        error
+      );
+
+      setError(
+        error.message ||
+          "Unable to delete user."
+      );
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  // =====================================================
+  // LOADING
+  // =====================================================
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-950 px-6 py-10 text-white sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-7xl">
+          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-12 text-center">
+            <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-gray-700 border-t-blue-500" />
+
+            <p className="text-gray-400">
+              Loading admin dashboard...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // =====================================================
+  // DASHBOARD
   // =====================================================
 
   return (
-    <div className="min-h-screen bg-gray-950 px-5 py-10 text-white sm:px-8 lg:px-12">
-
+    <div className="min-h-screen bg-gray-950 px-6 py-10 text-white sm:px-8 lg:px-12">
       <div className="mx-auto max-w-7xl">
 
         {/* =================================================
             HEADER
         ================================================= */}
 
-        <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <div className="mb-10 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
 
           <div>
-
-            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-blue-400">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-red-400">
               Project LOOP
             </p>
 
-            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
+            <h1 className="text-3xl font-bold sm:text-4xl">
               Admin Dashboard
             </h1>
 
-            <p className="mt-4 max-w-2xl text-base leading-7 text-gray-400">
-              Manage your Project LOOP workspace, customer
-              feedback, analytics, and AI-powered insights.
-            </p>
-
-          </div>
-
-
-          {/* ADMIN BADGE */}
-
-          <div className="flex items-center gap-3">
-
-            <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-3">
-
-              <p className="text-xs uppercase tracking-wide text-blue-400">
-                Role
-              </p>
-
-              <p className="mt-1 font-semibold capitalize text-white">
-                {user?.role || "Admin"}
-              </p>
-
-            </div>
-
-          </div>
-
-        </div>
-
-
-        {/* =================================================
-            WELCOME
-        ================================================= */}
-
-        <div className="mb-8 rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg sm:p-7">
-
-          <p className="text-sm text-gray-500">
-            Signed in as
-          </p>
-
-          <h2 className="mt-2 text-2xl font-semibold">
-            {user?.name || "Administrator"}
-          </h2>
-
-          {user?.email && (
-            <p className="mt-1 text-sm text-gray-500">
-              {user.email}
-            </p>
-          )}
-
-        </div>
-
-
-        {/* =================================================
-            ADMIN ACTIONS
-        ================================================= */}
-
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-
-
-          {/* =================================================
-              ANALYTICS
-          ================================================= */}
-
-          <Link
-            to="/analytics"
-            className="group rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg transition hover:-translate-y-1 hover:border-blue-500/40 hover:bg-gray-900/80"
-          >
-
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 font-bold text-blue-400">
-              A
-            </div>
-
-            <h3 className="mt-5 text-lg font-semibold">
-              Analytics
-            </h3>
-
-            <p className="mt-2 text-sm leading-6 text-gray-500">
-              View customer sentiment, themes, trends, and
-              feedback performance.
-            </p>
-
-            <p className="mt-5 text-sm font-semibold text-blue-400 transition group-hover:text-blue-300">
-              Open Analytics →
-            </p>
-
-          </Link>
-
-
-          {/* =================================================
-              FEEDBACK
-          ================================================= */}
-
-          <Link
-            to="/feedback"
-            className="group rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg transition hover:-translate-y-1 hover:border-blue-500/40 hover:bg-gray-900/80"
-          >
-
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-500/10 font-bold text-green-400">
-              F
-            </div>
-
-            <h3 className="mt-5 text-lg font-semibold">
-              Feedback
-            </h3>
-
-            <p className="mt-2 text-sm leading-6 text-gray-500">
-              Review, edit, delete, and inspect all customer
-              feedback.
-            </p>
-
-            <p className="mt-5 text-sm font-semibold text-green-400 transition group-hover:text-green-300">
-              Manage Feedback →
-            </p>
-
-          </Link>
-
-
-          {/* =================================================
-              ADD FEEDBACK
-          ================================================= */}
-
-          <Link
-            to="/add-feedback"
-            className="group rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg transition hover:-translate-y-1 hover:border-blue-500/40 hover:bg-gray-900/80"
-          >
-
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-500/10 font-bold text-purple-400">
-              +
-            </div>
-
-            <h3 className="mt-5 text-lg font-semibold">
-              Add Feedback
-            </h3>
-
-            <p className="mt-2 text-sm leading-6 text-gray-500">
-              Add new customer feedback and automatically send
-              it to Gemini for analysis.
-            </p>
-
-            <p className="mt-5 text-sm font-semibold text-purple-400 transition group-hover:text-purple-300">
-              Add Feedback →
-            </p>
-
-          </Link>
-
-
-          {/* =================================================
-              ASK AI
-          ================================================= */}
-
-          <Link
-            to="/ask-ai"
-            className="group rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg transition hover:-translate-y-1 hover:border-blue-500/40 hover:bg-gray-900/80"
-          >
-
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-yellow-500/10 font-bold text-yellow-400">
-              AI
-            </div>
-
-            <h3 className="mt-5 text-lg font-semibold">
-              Ask AI
-            </h3>
-
-            <p className="mt-2 text-sm leading-6 text-gray-500">
-              Ask Gemini questions about your customer
-              feedback and business insights.
-            </p>
-
-            <p className="mt-5 text-sm font-semibold text-yellow-400 transition group-hover:text-yellow-300">
-              Ask AI →
-            </p>
-
-          </Link>
-
-        </div>
-
-
-        {/* =================================================
-            ADMIN CONTROL SECTION
-        ================================================= */}
-
-        <div className="mt-8 rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg sm:p-7">
-
-          <div className="mb-6">
-
-            <h2 className="text-xl font-semibold">
-              Administration
-            </h2>
-
-            <p className="mt-2 text-sm text-gray-500">
-              Administrative controls for your Project LOOP
+            <p className="mt-3 max-w-2xl text-gray-400">
+              Manage users, roles, and your Project LOOP
               workspace.
             </p>
-
           </div>
-
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-
-
-            {/* USER MANAGEMENT */}
-
-            <div className="rounded-xl border border-gray-800 bg-gray-950 p-5">
-
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-800 font-semibold text-gray-300">
-                U
-              </div>
-
-              <h3 className="mt-4 font-semibold">
-                User Management
-              </h3>
-
-              <p className="mt-2 text-sm leading-6 text-gray-500">
-                Manage workspace users and their roles.
-              </p>
-
-              <span className="mt-4 inline-block text-xs font-semibold uppercase tracking-wide text-yellow-500">
-                Coming Next
-              </span>
-
-            </div>
-
-
-            {/* ROLE MANAGEMENT */}
-
-            <div className="rounded-xl border border-gray-800 bg-gray-950 p-5">
-
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-800 font-semibold text-gray-300">
-                R
-              </div>
-
-              <h3 className="mt-4 font-semibold">
-                Role Management
-              </h3>
-
-              <p className="mt-2 text-sm leading-6 text-gray-500">
-                Control admin, manager, and member permissions.
-              </p>
-
-              <span className="mt-4 inline-block text-xs font-semibold uppercase tracking-wide text-yellow-500">
-                Coming Next
-              </span>
-
-            </div>
-
-
-            {/* SYSTEM */}
-
-            <div className="rounded-xl border border-gray-800 bg-gray-950 p-5">
-
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-800 font-semibold text-gray-300">
-                S
-              </div>
-
-              <h3 className="mt-4 font-semibold">
-                System Settings
-              </h3>
-
-              <p className="mt-2 text-sm leading-6 text-gray-500">
-                Configure workspace and application settings.
-              </p>
-
-              <span className="mt-4 inline-block text-xs font-semibold uppercase tracking-wide text-yellow-500">
-                Coming Next
-              </span>
-
-            </div>
-
-          </div>
-
-        </div>
-
-
-        {/* =================================================
-            LOGOUT
-        ================================================= */}
-
-        <div className="mt-8 flex justify-end">
 
           <button
             type="button"
-            onClick={handleLogout}
-            className="rounded-xl border border-red-500/30 bg-red-500/5 px-5 py-3 text-sm font-semibold text-red-400 transition hover:bg-red-500/10"
+            onClick={fetchAdminData}
+            className="w-fit rounded-xl border border-gray-700 bg-gray-900 px-5 py-3 text-sm font-semibold text-gray-300 transition hover:border-blue-500 hover:text-blue-400"
           >
-            Logout
+            Refresh
           </button>
 
         </div>
 
+        {/* =================================================
+            ERROR
+        ================================================= */}
 
-        <div className="h-12" />
+        {error && (
+          <div className="mb-8 rounded-xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-400">
+            {error}
+          </div>
+        )}
+
+        {/* =================================================
+            STAT CARDS
+        ================================================= */}
+
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+
+          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg">
+            <p className="text-sm text-gray-500">
+              Total Users
+            </p>
+
+            <p className="mt-3 text-4xl font-bold">
+              {stats.totalUsers}
+            </p>
+
+            <p className="mt-2 text-xs text-gray-600">
+              All registered users
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg">
+            <p className="text-sm text-gray-500">
+              Administrators
+            </p>
+
+            <p className="mt-3 text-4xl font-bold text-red-400">
+              {stats.adminUsers}
+            </p>
+
+            <p className="mt-2 text-xs text-gray-600">
+              Admin accounts
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg">
+            <p className="text-sm text-gray-500">
+              Managers
+            </p>
+
+            <p className="mt-3 text-4xl font-bold text-blue-400">
+              {stats.managerUsers}
+            </p>
+
+            <p className="mt-2 text-xs text-gray-600">
+              Manager accounts
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg">
+            <p className="text-sm text-gray-500">
+              Members
+            </p>
+
+            <p className="mt-3 text-4xl font-bold text-green-400">
+              {stats.memberUsers}
+            </p>
+
+            <p className="mt-2 text-xs text-gray-600">
+              Member accounts
+            </p>
+          </div>
+
+        </div>
+
+        {/* =================================================
+            USER MANAGEMENT
+        ================================================= */}
+
+        <div className="mt-8 rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg sm:p-7">
+
+          <div className="mb-7">
+            <h2 className="text-xl font-semibold">
+              User Management
+            </h2>
+
+            <p className="mt-2 text-sm text-gray-500">
+              Manage registered users and their access
+              roles.
+            </p>
+          </div>
+
+          {users.length === 0 ? (
+            <div className="rounded-xl border border-gray-800 bg-gray-950 p-10 text-center text-sm text-gray-500">
+              No users found.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+
+              <table className="w-full min-w-[700px] text-left">
+
+                <thead>
+                  <tr className="border-b border-gray-800 text-xs uppercase tracking-wide text-gray-500">
+
+                    <th className="px-4 py-4">
+                      User
+                    </th>
+
+                    <th className="px-4 py-4">
+                      Email
+                    </th>
+
+                    <th className="px-4 py-4">
+                      Role
+                    </th>
+
+                    <th className="px-4 py-4">
+                      Joined
+                    </th>
+
+                    <th className="px-4 py-4 text-right">
+                      Actions
+                    </th>
+
+                  </tr>
+                </thead>
+
+                <tbody>
+
+                  {users.map((user) => {
+
+                    const isLoading =
+                      actionLoading ===
+                      user._id;
+
+                    return (
+                      <tr
+                        key={user._id}
+                        className="border-b border-gray-800/70 transition hover:bg-gray-950/60"
+                      >
+
+                        <td className="px-4 py-5">
+                          <div>
+                            <p className="font-semibold text-white">
+                              {user.name}
+                            </p>
+
+                            <p className="mt-1 text-xs text-gray-600">
+                              {user._id}
+                            </p>
+                          </div>
+                        </td>
+
+                        <td className="px-4 py-5 text-sm text-gray-400">
+                          {user.email}
+                        </td>
+
+                        <td className="px-4 py-5">
+
+                          <select
+                            value={
+                              user.role ||
+                              "member"
+                            }
+                            disabled={isLoading}
+                            onChange={(event) =>
+                              handleRoleChange(
+                                user._id,
+                                event.target.value
+                              )
+                            }
+                            className="rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-gray-300 outline-none transition focus:border-blue-500 disabled:opacity-50"
+                          >
+                            <option value="member">
+                              Member
+                            </option>
+
+                            <option value="manager">
+                              Manager
+                            </option>
+
+                            <option value="admin">
+                              Admin
+                            </option>
+                          </select>
+
+                        </td>
+
+                        <td className="px-4 py-5 text-sm text-gray-500">
+                          {user.createdAt
+                            ? new Date(
+                                user.createdAt
+                              ).toLocaleDateString()
+                            : "N/A"}
+                        </td>
+
+                        <td className="px-4 py-5 text-right">
+
+                          <button
+                            type="button"
+                            disabled={isLoading}
+                            onClick={() =>
+                              handleDeleteUser(
+                                user._id,
+                                user.name
+                              )
+                            }
+                            className="rounded-lg border border-red-500/20 px-3 py-2 text-xs font-semibold text-red-400 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            {isLoading
+                              ? "Processing..."
+                              : "Delete"}
+                          </button>
+
+                        </td>
+
+                      </tr>
+                    );
+                  })}
+
+                </tbody>
+
+              </table>
+
+            </div>
+          )}
+
+        </div>
+
+        {/* =================================================
+            QUICK NAVIGATION
+        ================================================= */}
+
+        <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
+
+          <button
+            type="button"
+            onClick={() =>
+              navigate("/dashboard")
+            }
+            className="rounded-xl border border-gray-800 bg-gray-900 p-5 text-left transition hover:border-blue-500/40 hover:bg-gray-900/80"
+          >
+            <p className="font-semibold">
+              Analytics Dashboard
+            </p>
+
+            <p className="mt-2 text-sm text-gray-500">
+              View feedback analytics and insights.
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              navigate("/feedback")
+            }
+            className="rounded-xl border border-gray-800 bg-gray-900 p-5 text-left transition hover:border-blue-500/40 hover:bg-gray-900/80"
+          >
+            <p className="font-semibold">
+              Feedback
+            </p>
+
+            <p className="mt-2 text-sm text-gray-500">
+              Review all customer feedback.
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              navigate("/ask-ai")
+            }
+            className="rounded-xl border border-gray-800 bg-gray-900 p-5 text-left transition hover:border-blue-500/40 hover:bg-gray-900/80"
+          >
+            <p className="font-semibold">
+              Ask LOOP AI
+            </p>
+
+            <p className="mt-2 text-sm text-gray-500">
+              Ask questions about customer feedback.
+            </p>
+          </button>
+
+        </div>
+
+        <div className="h-16" />
 
       </div>
-
     </div>
   );
 }
-
 
 export default AdminDashboard;

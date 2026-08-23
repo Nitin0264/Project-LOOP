@@ -1,13 +1,13 @@
 import React from "react";
+
 import {
   Navigate,
   Outlet,
   useLocation,
 } from "react-router-dom";
 
-
 // =====================================================
-// GET USER FROM JWT
+// READ USER FROM JWT
 // =====================================================
 
 function getUserFromToken() {
@@ -32,7 +32,6 @@ function getUserFromToken() {
     return null;
   }
 }
-
 
 // =====================================================
 // PROTECTED ROUTE
@@ -61,9 +60,8 @@ function ProtectedRoute({
     );
   }
 
-
   // ===================================================
-  // GET USER
+  // READ JWT
   // ===================================================
 
   const user = getUserFromToken();
@@ -79,7 +77,6 @@ function ProtectedRoute({
       />
     );
   }
-
 
   // ===================================================
   // TOKEN EXPIRATION
@@ -100,7 +97,6 @@ function ProtectedRoute({
     );
   }
 
-
   // ===================================================
   // ROLE CHECK
   // ===================================================
@@ -117,13 +113,11 @@ function ProtectedRoute({
     );
   }
 
-
   // ===================================================
   // AUTHORIZED
   // ===================================================
 
   return <Outlet />;
 }
-
 
 export default ProtectedRoute;

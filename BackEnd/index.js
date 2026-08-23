@@ -11,7 +11,7 @@ import { userRoutes } from "./routes/userRoutes.js";
 import { authRoutes } from "./routes/authRoutes.js";
 import { feedbackRoutes } from "./routes/feedbackRoutes.js";
 import { aiRoutes } from "./routes/aiRoutes.js";
-
+import adminRoutes from "./routes/adminRoutes.js";
 // =====================================================
 // APP CONFIGURATION
 // =====================================================
@@ -58,6 +58,7 @@ app.use("/feedback", feedbackRoutes);
 app.use("/ai", aiRoutes);
 
 app.use("/users", userRoutes);
+app.use("/admin", adminRoutes);
 // =====================================================
 // HEALTH CHECK
 // =====================================================

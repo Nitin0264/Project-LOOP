@@ -16,12 +16,7 @@ function getUserFromToken() {
     return JSON.parse(
       atob(token.split(".")[1])
     );
-  } catch (error) {
-    console.error(
-      "Unable to read user role:",
-      error
-    );
-
+  } catch {
     return null;
   }
 }
@@ -33,23 +28,15 @@ function Navbar() {
 
   const user = getUserFromToken();
 
-  const role = user?.role || "member";
-
-  const isAdmin = role === "admin";
-
-  // =====================================================
-  // LOGOUT
-  // =====================================================
+  const isAdmin =
+    user?.role === "admin";
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
 
     navigate("/login");
   };
-
-  // =====================================================
-  // NAV LINK STYLE
-  // =====================================================
 
   const navLinkClass = ({ isActive }) =>
     `text-sm font-medium transition ${
@@ -60,27 +47,33 @@ function Navbar() {
 
   return (
     <nav className="w-full border-b border-gray-800 bg-gray-950">
+
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-8 lg:px-10">
 
-        {/* =================================================
+        {/* =====================================================
             LOGO
-        ================================================= */}
+        ===================================================== */}
 
         <Link
-          to={token ? "/dashboard" : "/"}
+          to={
+            token
+              ? "/dashboard"
+              : "/"
+          }
           className="text-xl font-bold tracking-tight text-blue-500 transition hover:text-blue-400"
         >
           Project LOOP
         </Link>
 
 
-        {/* =================================================
+        {/* =====================================================
             NAVIGATION
-        ================================================= */}
+        ===================================================== */}
 
         <div className="flex items-center gap-5">
 
           {!token ? (
+
             <>
               <NavLink
                 to="/"
@@ -124,8 +117,11 @@ function Navbar() {
                 Get Started
               </Link>
             </>
+
           ) : (
+
             <>
+
               <NavLink
                 to="/dashboard"
                 className={navLinkClass}
@@ -148,23 +144,22 @@ function Navbar() {
               </NavLink>
 
               <NavLink
-                to="/ask-ai"
-                className={navLinkClass}
-              >
-                Ask AI
-              </NavLink>
-
-              <NavLink
                 to="/analytics"
                 className={navLinkClass}
               >
                 Analytics
               </NavLink>
 
+              <NavLink
+                to="/ask-ai"
+                className={navLinkClass}
+              >
+                Ask AI
+              </NavLink>
 
-              {/* ===========================================
+              {/* =================================================
                   ADMIN ONLY
-              =========================================== */}
+              ================================================= */}
 
               {isAdmin && (
                 <NavLink
@@ -172,34 +167,14 @@ function Navbar() {
                   className={({ isActive }) =>
                     `rounded-lg border px-3 py-2 text-sm font-semibold transition ${
                       isActive
-                        ? "border-purple-500/40 bg-purple-500/10 text-purple-400"
-                        : "border-purple-500/20 text-purple-400 hover:bg-purple-500/10"
+                        ? "border-red-500/40 bg-red-500/10 text-red-400"
+                        : "border-gray-700 text-gray-300 hover:border-red-500/30 hover:text-red-400"
                     }`
                   }
                 >
                   Admin
                 </NavLink>
               )}
-
-
-              {/* ===========================================
-                  ROLE BADGE
-              =========================================== */}
-
-              <span
-                className={`hidden rounded-full border px-3 py-1 text-xs font-semibold capitalize sm:inline-block ${
-                  isAdmin
-                    ? "border-purple-500/20 bg-purple-500/10 text-purple-400"
-                    : "border-gray-700 bg-gray-900 text-gray-400"
-                }`}
-              >
-                {role}
-              </span>
-
-
-              {/* ===========================================
-                  LOGOUT
-              =========================================== */}
 
               <button
                 type="button"
@@ -213,7 +188,9 @@ function Navbar() {
           )}
 
         </div>
+
       </div>
+
     </nav>
   );
 }

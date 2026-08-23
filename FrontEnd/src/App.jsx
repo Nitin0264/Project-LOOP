@@ -1,8 +1,5 @@
 import React from "react";
-import {
-  Routes,
-  Route,
-} from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 
 import AskAI from "./pages/AskAI";
 
@@ -13,15 +10,12 @@ import WelcomePage from "./Pages/WelcomePage";
 import LoginPage from "./Pages/LoginPage";
 import RegisterPage from "./Pages/RegisterPage";
 import InfoPage from "./Pages/InfoPage";
-
 import DashboardPage from "./Pages/Dashboard";
 import FeedbackPage from "./Pages/FeedbackPage";
 import AddFeedbackPage from "./Pages/AddFeedbackPage";
 import EditFeedbackPage from "./Pages/EditFeedbackPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
-
 import AdminDashboard from "./Pages/AdminDashboard";
-
 
 function App() {
   return (
@@ -56,32 +50,10 @@ function App() {
 
 
         {/* =====================================================
-            ADMIN ROUTE
+            PROTECTED ROUTES
         ===================================================== */}
 
-        <Route
-          element={
-            <ProtectedRoute
-              allowedRoles={["admin"]}
-            />
-          }
-        >
-
-          <Route
-            path="/admin"
-            element={<AdminDashboard />}
-          />
-
-        </Route>
-
-
-        {/* =====================================================
-            NORMAL PROTECTED ROUTES
-        ===================================================== */}
-
-        <Route
-          element={<ProtectedRoute />}
-        >
+        <Route element={<ProtectedRoute />}>
 
           <Route
             path="/dashboard"
@@ -115,10 +87,29 @@ function App() {
 
         </Route>
 
+
+        {/* =====================================================
+            ADMIN ONLY ROUTE
+        ===================================================== */}
+
+        <Route
+          element={
+            <ProtectedRoute
+              allowedRoles={["admin"]}
+            />
+          }
+        >
+
+          <Route
+            path="/admin"
+            element={<AdminDashboard />}
+          />
+
+        </Route>
+
       </Routes>
     </>
   );
 }
-
 
 export default App;
