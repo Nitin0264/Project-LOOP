@@ -5,17 +5,13 @@ import {
   useNavigate,
 } from "react-router-dom";
 
-function getUserFromToken() {
-  const token = localStorage.getItem("token");
-
-  if (!token) {
-    return null;
-  }
-
+function getUser() {
   try {
-    return JSON.parse(
-      atob(token.split(".")[1])
-    );
+    const user = localStorage.getItem("user");
+
+    return user
+      ? JSON.parse(user)
+      : null;
   } catch {
     return null;
   }
@@ -25,8 +21,7 @@ function Navbar() {
   const navigate = useNavigate();
 
   const token = localStorage.getItem("token");
-
-  const user = getUserFromToken();
+  const user = getUser();
 
   const isAdmin =
     user?.role === "admin";
@@ -47,7 +42,6 @@ function Navbar() {
 
   return (
     <nav className="w-full border-b border-gray-800 bg-gray-950">
-
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-8 lg:px-10">
 
         {/* =====================================================
@@ -55,11 +49,7 @@ function Navbar() {
         ===================================================== */}
 
         <Link
-          to={
-            token
-              ? "/dashboard"
-              : "/"
-          }
+          to={token ? "/dashboard" : "/"}
           className="text-xl font-bold tracking-tight text-blue-500 transition hover:text-blue-400"
         >
           Project LOOP
@@ -73,7 +63,6 @@ function Navbar() {
         <div className="flex items-center gap-5">
 
           {!token ? (
-
             <>
               <NavLink
                 to="/"
@@ -117,11 +106,8 @@ function Navbar() {
                 Get Started
               </Link>
             </>
-
           ) : (
-
             <>
-
               <NavLink
                 to="/dashboard"
                 className={navLinkClass}
@@ -150,25 +136,14 @@ function Navbar() {
                 Analytics
               </NavLink>
 
-              <NavLink
-                to="/ask-ai"
-                className={navLinkClass}
-              >
-                Ask AI
-              </NavLink>
-
-              {/* =================================================
-                  ADMIN ONLY
-              ================================================= */}
-
               {isAdmin && (
                 <NavLink
                   to="/admin"
                   className={({ isActive }) =>
-                    `rounded-lg border px-3 py-2 text-sm font-semibold transition ${
+                    `rounded-lg border px-4 py-2 text-sm font-semibold transition ${
                       isActive
-                        ? "border-red-500/40 bg-red-500/10 text-red-400"
-                        : "border-gray-700 text-gray-300 hover:border-red-500/30 hover:text-red-400"
+                        ? "border-blue-500/40 bg-blue-500/10 text-blue-400"
+                        : "border-gray-700 text-gray-300 hover:border-blue-500/40 hover:text-blue-400"
                     }`
                   }
                 >
@@ -183,14 +158,11 @@ function Navbar() {
               >
                 Logout
               </button>
-
             </>
           )}
 
         </div>
-
       </div>
-
     </nav>
   );
 }

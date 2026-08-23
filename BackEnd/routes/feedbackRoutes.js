@@ -1,6 +1,6 @@
 import express from "express";
 
-import { Feedback } from "../model/feedback.js";
+import Feedback from "../model/feedback.js";
 
 import {
   analyzeFeedbackWithAI,

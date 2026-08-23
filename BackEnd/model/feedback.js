@@ -64,4 +64,4 @@ recommendation: {
 const Feedback = mongoose.model("Feedback",
   feedbackSchema)
 
-export {Feedback}
+export default Feedback;
