@@ -2,9 +2,6 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 
-import AskAI from "./pages/AskAI";
-import AnalyticsPage from "./pages/AnalyticsPage";
-
 import Navbar from "./Components/Navbar";
 import ProtectedRoute from "./Components/ProtectedRoute";
 
@@ -16,6 +13,8 @@ import DashboardPage from "./Pages/Dashboard";
 import FeedbackPage from "./Pages/FeedbackPage";
 import AddFeedbackPage from "./Pages/AddFeedbackPage";
 import EditFeedbackPage from "./Pages/EditFeedbackPage";
+import AskAI from "./pages/AskAI";
+import AnalyticsPage from "./pages/AnalyticsPage";
 
 import AdminDashboard from "./Pages/AdminDashboard";
 import AdminUsersPage from "./Pages/AdminUsersPage";
@@ -26,7 +25,6 @@ function App() {
       <Navbar />
 
       <Routes>
-
         {/* =====================================================
             PUBLIC ROUTES
         ===================================================== */}
@@ -51,13 +49,11 @@ function App() {
           element={<InfoPage />}
         />
 
-
         {/* =====================================================
             NORMAL PROTECTED ROUTES
         ===================================================== */}
 
         <Route element={<ProtectedRoute />}>
-
           <Route
             path="/dashboard"
             element={<DashboardPage />}
@@ -87,9 +83,7 @@ function App() {
             path="/analytics"
             element={<AnalyticsPage />}
           />
-
         </Route>
-
 
         {/* =====================================================
             ADMIN ONLY ROUTES
@@ -102,7 +96,6 @@ function App() {
             />
           }
         >
-
           <Route
             path="/admin"
             element={<AdminDashboard />}
@@ -115,11 +108,9 @@ function App() {
 
           <Route
             path="/admin/feedback"
-            element={<AddFeedbackPage />}
+            element={<FeedbackPage />}
           />
-
         </Route>
-
       </Routes>
     </>
   );

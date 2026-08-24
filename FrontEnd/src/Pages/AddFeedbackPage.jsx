@@ -3,207 +3,140 @@ import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 
 function AddFeedbackPage() {
-
   const navigate = useNavigate();
 
-  const [feedback, setFeedback] = useState({
+  // =====================================================
+  // STATE
+  // =====================================================
+
+  const [formData, setFormData] = useState({
     customerName: "",
     customerEmail: "",
-    source: "",
     message: "",
+    source: "website",
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-
   // =====================================================
-  // HANDLE INPUT CHANGES
+  // HANDLE INPUT
   // =====================================================
 
-  const handleChange = (e) => {
+  const handleChange = (event) => {
+    const { name, value } = event.target;
 
-    const { name, value } = e.target;
-
-    setFeedback((previous) => ({
+    setFormData((previous) => ({
       ...previous,
       [name]: value,
     }));
-
   };
 
-
   // =====================================================
-  // HANDLE FORM SUBMISSION
+  // SUBMIT FEEDBACK
   // =====================================================
 
-  const handleSubmit = async (e) => {
-
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
     setError("");
     setSuccess("");
-    setLoading(true);
+
+    const customerName = formData.customerName.trim();
+    const customerEmail = formData.customerEmail.trim();
+    const message = formData.message.trim();
+
+    if (!customerName) {
+      setError("Please enter the customer name.");
+      return;
+    }
+
+    if (!message) {
+      setError("Please enter the customer feedback.");
+      return;
+    }
 
     try {
+      setLoading(true);
 
-      // =================================================
-      // CHECK JWT TOKEN
-      // =================================================
+      const payload = {
+        customerName,
+        customerEmail,
+        message,
+        source: formData.source,
+      };
 
-      const token = localStorage.getItem("token");
+      console.log("Submitting feedback:", payload);
 
-      console.log(
-        "Add Feedback - Token found:",
-        !!token
-      );
-
-      if (!token) {
-
-        setError(
-          "You are not logged in. Please login first."
-        );
-
-        navigate("/login", {
-          replace: true,
-        });
-
-        return;
-      }
-
-
-      // =================================================
-      // SEND FEEDBACK USING CENTRAL API
-      // =================================================
-
-      const data = await api(
-        "/feedback",
-        {
-          method: "POST",
-
-          body: JSON.stringify(feedback),
-        }
-      );
-
-
-      // =================================================
-      // LOG RESPONSE
-      // =================================================
-
-      console.log(
-        "Feedback API response:",
-        data
-      );
-
-
-      // =================================================
-      // HANDLE AUTHENTICATION ERROR
-      // =================================================
-
-      if (
-        data.status === 401 ||
-        data.message ===
-          "Authentication required."
-      ) {
-
-        console.error(
-          "Authentication failed while submitting feedback."
-        );
-
-        setError(
-          "Your login session has expired. Please login again."
-        );
-
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-
-        navigate("/login", {
-          replace: true,
-        });
-
-        return;
-      }
-
-
-      // =================================================
-      // HANDLE OTHER API ERRORS
-      // =================================================
-
-      if (!data.ok || !data.success) {
-
-        throw new Error(
-          data.message ||
-          data.error ||
-          "Unable to save feedback."
-        );
-
-      }
-
-
-      // =================================================
-      // SUCCESS
-      // =================================================
-
-      setSuccess(
-        "Feedback saved successfully!"
-      );
-
-
-      // =================================================
-      // CLEAR FORM
-      // =================================================
-
-      setFeedback({
-        customerName: "",
-        customerEmail: "",
-        source: "",
-        message: "",
+      const data = await api("/feedback", {
+        method: "POST",
+        body: JSON.stringify(payload),
       });
 
+      console.log("Add feedback response:", data);
 
-      // =================================================
-      // GO BACK TO FEEDBACK PAGE
-      // =================================================
+      // -------------------------------------------------
+      // AUTHENTICATION ERROR
+      // -------------------------------------------------
 
-      setTimeout(() => {
+      if (data.status === 401) {
+        setError(
+          "Your session has expired. Please login again."
+        );
 
-        navigate("/feedback");
+        return;
+      }
 
-      }, 1000);
+      // -------------------------------------------------
+      // API ERROR
+      // -------------------------------------------------
 
+      if (!data.ok || data.success === false) {
+        throw new Error(
+          data.message ||
+            "Unable to submit feedback."
+        );
+      }
+
+      // -------------------------------------------------
+      // SUCCESS
+      // -------------------------------------------------
+
+      setSuccess(
+        "Feedback submitted successfully and AI analysis has been completed."
+      );
+
+      setFormData({
+        customerName: "",
+        customerEmail: "",
+        message: "",
+        source: "website",
+      });
 
     } catch (error) {
-
       console.error(
-        "Feedback submission error:",
+        "Add feedback error:",
         error
       );
 
       setError(
         error.message ||
-        "Unable to connect to the server. Please try again."
+          "Unable to submit feedback."
       );
-
     } finally {
-
       setLoading(false);
-
     }
-
   };
 
-
   // =====================================================
-  // UI
+  // PAGE
   // =====================================================
 
   return (
+    <div className="min-h-screen bg-gray-950 px-5 py-10 text-white sm:px-8 md:px-10 lg:px-12">
 
-    <div className="min-h-screen bg-gray-950 text-white px-6 py-10 md:px-10 lg:px-12">
-
-      <div className="max-w-4xl mx-auto">
-
+      <div className="mx-auto max-w-4xl">
 
         {/* =================================================
             HEADER
@@ -211,166 +144,160 @@ function AddFeedbackPage() {
 
         <div className="mb-10">
 
-          <p className="text-sm font-semibold tracking-wider text-blue-400 uppercase">
-            Customer Intelligence
+          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-blue-400">
+            Project LOOP
           </p>
 
-          <h1 className="text-4xl md:text-5xl font-bold mt-3">
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
             Add Customer Feedback
           </h1>
 
-          <p className="text-gray-400 mt-4 max-w-2xl leading-relaxed">
-            Add customer feedback to your Project LOOP workspace.
-            Once saved, this feedback can be analyzed for sentiment,
-            themes, and customer insights.
+          <p className="mt-4 max-w-2xl text-base leading-7 text-gray-400">
+            Add customer feedback to Project LOOP and let AI
+            analyze the sentiment, themes, key issues, and
+            recommendations automatically.
           </p>
 
         </div>
 
 
         {/* =================================================
-            FORM CARD
+            SUCCESS
         ================================================= */}
 
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 md:p-8 lg:p-10">
+        {success && (
+          <div className="mb-6 rounded-xl border border-green-500/20 bg-green-500/10 px-5 py-4 text-sm text-green-400">
+            {success}
+          </div>
+        )}
 
-          <form
-            onSubmit={handleSubmit}
-            className="flex flex-col gap-7"
-          >
 
+        {/* =================================================
+            ERROR
+        ================================================= */}
+
+        {error && (
+          <div className="mb-6 flex flex-col gap-4 rounded-xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-400 sm:flex-row sm:items-center sm:justify-between">
+
+            <span>
+              {error}
+            </span>
+
+            {error.includes("session") && (
+              <button
+                type="button"
+                onClick={() => navigate("/login")}
+                className="w-fit rounded-lg bg-red-500/10 px-4 py-2 font-semibold text-red-300 transition hover:bg-red-500/20"
+              >
+                Login Again
+              </button>
+            )}
+
+          </div>
+        )}
+
+
+        {/* =================================================
+            FORM
+        ================================================= */}
+
+        <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-xl sm:p-8">
+
+          <div className="mb-7">
+
+            <h2 className="text-xl font-semibold">
+              Feedback Details
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-gray-500">
+              Enter the customer information and feedback
+              below.
+            </p>
+
+          </div>
+
+
+          <form onSubmit={handleSubmit}>
 
             {/* =================================================
-                ERROR MESSAGE
+                CUSTOMER INFORMATION
             ================================================= */}
 
-            {error && (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
 
-              <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400">
+              {/* Customer Name */}
 
-                {error}
+              <div>
+
+                <label className="mb-2 block text-sm font-medium text-gray-300">
+                  Customer Name
+                </label>
+
+                <input
+                  type="text"
+                  name="customerName"
+                  value={formData.customerName}
+                  onChange={handleChange}
+                  placeholder="Enter customer name"
+                  required
+                  className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 text-white outline-none transition placeholder:text-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                />
 
               </div>
 
-            )}
 
+              {/* Customer Email */}
 
-            {/* =================================================
-                SUCCESS MESSAGE
-            ================================================= */}
+              <div>
 
-            {success && (
+                <label className="mb-2 block text-sm font-medium text-gray-300">
+                  Customer Email
+                </label>
 
-              <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/30 text-green-400">
-
-                {success}
+                <input
+                  type="email"
+                  name="customerEmail"
+                  value={formData.customerEmail}
+                  onChange={handleChange}
+                  placeholder="customer@example.com"
+                  className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 text-white outline-none transition placeholder:text-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                />
 
               </div>
 
-            )}
 
+              {/* Source */}
 
-            {/* =================================================
-                CUSTOMER NAME
-            ================================================= */}
+              <div className="md:col-span-2">
 
-            <div className="flex flex-col gap-2">
+                <label className="mb-2 block text-sm font-medium text-gray-300">
+                  Feedback Source
+                </label>
 
-              <label
-                htmlFor="customerName"
-                className="text-sm font-medium text-gray-300"
-              >
-                Customer Name
-              </label>
+                <select
+                  name="source"
+                  value={formData.source}
+                  onChange={handleChange}
+                  className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 text-white outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                >
+                  <option value="website">
+                    Website
+                  </option>
 
-              <input
-                id="customerName"
-                name="customerName"
-                type="text"
-                value={feedback.customerName}
-                onChange={handleChange}
-                placeholder="Enter customer name"
-                required
-                className="w-full px-4 py-3.5 bg-gray-950 border border-gray-700 rounded-lg text-white placeholder-gray-600 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
-              />
+                  <option value="manual">
+                    Manual
+                  </option>
 
-            </div>
+                  <option value="survey">
+                    Survey
+                  </option>
 
+                  <option value="email">
+                    Email
+                  </option>
+                </select>
 
-            {/* =================================================
-                CUSTOMER EMAIL
-            ================================================= */}
-
-            <div className="flex flex-col gap-2">
-
-              <label
-                htmlFor="customerEmail"
-                className="text-sm font-medium text-gray-300"
-              >
-                Customer Email
-              </label>
-
-              <input
-                id="customerEmail"
-                name="customerEmail"
-                type="email"
-                value={feedback.customerEmail}
-                onChange={handleChange}
-                placeholder="customer@example.com"
-                required
-                className="w-full px-4 py-3.5 bg-gray-950 border border-gray-700 rounded-lg text-white placeholder-gray-600 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
-              />
-
-            </div>
-
-
-            {/* =================================================
-                FEEDBACK SOURCE
-            ================================================= */}
-
-            <div className="flex flex-col gap-2">
-
-              <label
-                htmlFor="source"
-                className="text-sm font-medium text-gray-300"
-              >
-                Feedback Source
-              </label>
-
-              <select
-                id="source"
-                name="source"
-                value={feedback.source}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-3.5 bg-gray-950 border border-gray-700 rounded-lg text-gray-300 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
-              >
-
-                <option value="">
-                  Select feedback source
-                </option>
-
-                <option value="support">
-                  Support
-                </option>
-
-                <option value="review">
-                  Review
-                </option>
-
-                <option value="survey">
-                  Survey
-                </option>
-
-                <option value="sales-call">
-                  Sales Call
-                </option>
-
-                <option value="community">
-                  Community
-                </option>
-
-              </select>
+              </div>
 
             </div>
 
@@ -379,60 +306,56 @@ function AddFeedbackPage() {
                 FEEDBACK MESSAGE
             ================================================= */}
 
-            <div className="flex flex-col gap-2">
+            <div className="mt-6">
 
-              <label
-                htmlFor="message"
-                className="text-sm font-medium text-gray-300"
-              >
+              <label className="mb-2 block text-sm font-medium text-gray-300">
                 Customer Feedback
               </label>
 
               <textarea
-                id="message"
                 name="message"
-                value={feedback.message}
+                value={formData.message}
                 onChange={handleChange}
-                placeholder="Enter the customer's feedback..."
                 rows="8"
                 required
-                className="w-full px-4 py-3.5 bg-gray-950 border border-gray-700 rounded-lg text-white placeholder-gray-600 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition resize-none"
+                placeholder="Enter the customer's feedback..."
+                className="w-full resize-none rounded-xl border border-gray-700 bg-gray-950 px-4 py-4 leading-7 text-white outline-none transition placeholder:text-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
               />
 
-              <p className="text-xs text-gray-600">
-                Enter the customer's feedback as accurately as possible.
+              <p className="mt-2 text-xs text-gray-600">
+                Project LOOP AI will analyze this feedback
+                after submission.
               </p>
 
             </div>
 
 
             {/* =================================================
-                BUTTONS
+                ACTIONS
             ================================================= */}
 
-            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+            <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
 
               <button
-                type="submit"
+                type="button"
+                onClick={() =>
+                  navigate("/feedback")
+                }
                 disabled={loading}
-                className="px-7 py-3.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-blue-900 disabled:cursor-not-allowed transition font-semibold"
+                className="rounded-xl border border-gray-700 px-6 py-3 text-sm font-semibold text-gray-300 transition hover:border-gray-600 hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
               >
-
-                {loading
-                  ? "Saving Feedback..."
-                  : "Save Feedback"}
-
+                Cancel
               </button>
 
 
               <button
-                type="button"
-                onClick={() => navigate("/feedback")}
-                className="px-7 py-3.5 rounded-lg border border-gray-700 hover:bg-gray-800 transition font-semibold"
+                type="submit"
+                disabled={loading}
+                className="rounded-xl bg-blue-600 px-7 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
-
-                Cancel
-
+                {loading
+                  ? "Analyzing Feedback..."
+                  : "Submit Feedback"}
               </button>
 
             </div>
@@ -441,12 +364,44 @@ function AddFeedbackPage() {
 
         </div>
 
+
+        {/* =================================================
+            AI INFORMATION
+        ================================================= */}
+
+        <div className="mt-8 rounded-2xl border border-blue-500/20 bg-blue-500/5 p-6">
+
+          <div className="flex items-start gap-4">
+
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 font-bold text-blue-400">
+              AI
+            </div>
+
+            <div>
+
+              <h3 className="font-semibold text-white">
+                Automatic AI Analysis
+              </h3>
+
+              <p className="mt-2 text-sm leading-6 text-gray-400">
+                After you submit the feedback, Project LOOP
+                analyzes it using AI to identify sentiment,
+                recurring themes, key issues, and useful
+                recommendations.
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div className="h-16" />
+
       </div>
-
     </div>
-
   );
-
 }
 
 export default AddFeedbackPage;
