@@ -7,51 +7,114 @@ function AdminUsersPage() {
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+
   const [updatingUser, setUpdatingUser] = useState(null);
   const [deletingUser, setDeletingUser] = useState(null);
+
+  // =====================================================
+  // CURRENT USER
+  // =====================================================
+
+  const getCurrentUser = () => {
+    try {
+      return JSON.parse(
+        localStorage.getItem("user") || "null"
+      );
+    } catch {
+      return null;
+    }
+  };
+
+  const currentUser = getCurrentUser();
 
   // =====================================================
   // FETCH USERS
   // =====================================================
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+
       setError("");
 
       const data = await api("/admin/users");
 
       console.log("Admin users response:", data);
 
+      // -------------------------------------------------
+      // AUTHENTICATION
+      // -------------------------------------------------
+
       if (data.status === 401) {
-        navigate("/login", { replace: true });
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+
+        navigate("/login", {
+          replace: true,
+        });
+
         return;
       }
 
+      // -------------------------------------------------
+      // AUTHORIZATION
+      // -------------------------------------------------
+
       if (data.status === 403) {
-        setError("You do not have permission to access this page.");
+        setError(
+          "You do not have permission to access this page."
+        );
+
         return;
       }
+
+      // -------------------------------------------------
+      // OTHER API ERRORS
+      // -------------------------------------------------
 
       if (!data.ok || data.success === false) {
         throw new Error(
-          data.message || "Unable to load users."
+          data.message ||
+            "Unable to load users."
         );
       }
 
-      setUsers(Array.isArray(data.users) ? data.users : []);
+      // -------------------------------------------------
+      // USERS
+      // -------------------------------------------------
+
+      setUsers(
+        Array.isArray(data.users)
+          ? data.users
+          : []
+      );
     } catch (error) {
-      console.error("Fetch users error:", error);
+      console.error(
+        "Fetch users error:",
+        error
+      );
 
       setError(
-        error.message || "Unable to load users."
+        error.message ||
+          "Unable to load users."
       );
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
+
+  // =====================================================
+  // INITIAL LOAD
+  // =====================================================
 
   useEffect(() => {
     fetchUsers();
@@ -61,7 +124,10 @@ function AdminUsersPage() {
   // UPDATE ROLE
   // =====================================================
 
-  const handleRoleChange = async (userId, newRole) => {
+  const handleRoleChange = async (
+    userId,
+    newRole
+  ) => {
     try {
       setUpdatingUser(userId);
       setMessage("");
@@ -77,27 +143,50 @@ function AdminUsersPage() {
         }
       );
 
+      // -------------------------------------------------
+      // AUTHENTICATION
+      // -------------------------------------------------
+
       if (data.status === 401) {
-        navigate("/login", { replace: true });
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+
+        navigate("/login", {
+          replace: true,
+        });
+
         return;
       }
 
+      // -------------------------------------------------
+      // ERROR
+      // -------------------------------------------------
+
       if (!data.ok || data.success === false) {
         throw new Error(
-          data.message || "Unable to update user role."
+          data.message ||
+            "Unable to update user role."
         );
       }
+
+      // -------------------------------------------------
+      // SUCCESS
+      // -------------------------------------------------
 
       setMessage(
         "User role updated successfully."
       );
 
-      await fetchUsers();
+      await fetchUsers(true);
     } catch (error) {
-      console.error("Update role error:", error);
+      console.error(
+        "Update role error:",
+        error
+      );
 
       setError(
-        error.message || "Unable to update user role."
+        error.message ||
+          "Unable to update user role."
       );
     } finally {
       setUpdatingUser(null);
@@ -129,25 +218,50 @@ function AdminUsersPage() {
         }
       );
 
+      // -------------------------------------------------
+      // AUTHENTICATION
+      // -------------------------------------------------
+
       if (data.status === 401) {
-        navigate("/login", { replace: true });
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+
+        navigate("/login", {
+          replace: true,
+        });
+
         return;
       }
 
+      // -------------------------------------------------
+      // ERROR
+      // -------------------------------------------------
+
       if (!data.ok || data.success === false) {
         throw new Error(
-          data.message || "Unable to delete user."
+          data.message ||
+            "Unable to delete user."
         );
       }
 
-      setMessage("User deleted successfully.");
+      // -------------------------------------------------
+      // SUCCESS
+      // -------------------------------------------------
 
-      await fetchUsers();
+      setMessage(
+        "User deleted successfully."
+      );
+
+      await fetchUsers(true);
     } catch (error) {
-      console.error("Delete user error:", error);
+      console.error(
+        "Delete user error:",
+        error
+      );
 
       setError(
-        error.message || "Unable to delete user."
+        error.message ||
+          "Unable to delete user."
       );
     } finally {
       setDeletingUser(null);
@@ -155,7 +269,7 @@ function AdminUsersPage() {
   };
 
   // =====================================================
-  // ROLE STYLING
+  // ROLE STYLE
   // =====================================================
 
   const getRoleStyle = (role) => {
@@ -194,11 +308,13 @@ function AdminUsersPage() {
           </div>
 
           <div className="rounded-2xl border border-gray-800 bg-gray-900 p-12 text-center">
+
             <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-gray-700 border-t-blue-500" />
 
             <p className="text-gray-400">
               Loading users...
             </p>
+
           </div>
 
         </div>
@@ -222,6 +338,7 @@ function AdminUsersPage() {
         <div className="mb-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
 
           <div>
+
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-blue-400">
               Project LOOP
             </p>
@@ -234,14 +351,18 @@ function AdminUsersPage() {
               Manage registered users, assign workspace roles,
               and control access to Project LOOP.
             </p>
+
           </div>
 
           <button
             type="button"
-            onClick={fetchUsers}
-            className="w-fit rounded-xl border border-gray-700 bg-gray-900 px-5 py-3 text-sm font-semibold text-gray-300 transition hover:border-blue-500/40 hover:text-blue-400"
+            onClick={() => fetchUsers(true)}
+            disabled={refreshing}
+            className="w-fit rounded-xl border border-gray-700 bg-gray-900 px-5 py-3 text-sm font-semibold text-gray-300 transition hover:border-blue-500/40 hover:text-blue-400 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Refresh Users
+            {refreshing
+              ? "Refreshing..."
+              : "Refresh Users"}
           </button>
 
         </div>
@@ -278,7 +399,7 @@ function AdminUsersPage() {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
+          <div className="rounded-2xl border border-purple-500/20 bg-gray-900 p-6">
             <p className="text-sm text-gray-500">
               Administrators
             </p>
@@ -286,13 +407,14 @@ function AdminUsersPage() {
             <p className="mt-3 text-4xl font-bold text-purple-400">
               {
                 users.filter(
-                  (user) => user.role === "admin"
+                  (user) =>
+                    user.role === "admin"
                 ).length
               }
             </p>
           </div>
 
-          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
+          <div className="rounded-2xl border border-blue-500/20 bg-gray-900 p-6">
             <p className="text-sm text-gray-500">
               Members & Managers
             </p>
@@ -300,7 +422,8 @@ function AdminUsersPage() {
             <p className="mt-3 text-4xl font-bold text-blue-400">
               {
                 users.filter(
-                  (user) => user.role !== "admin"
+                  (user) =>
+                    user.role !== "admin"
                 ).length
               }
             </p>
@@ -327,18 +450,16 @@ function AdminUsersPage() {
           </div>
 
           {users.length === 0 ? (
+
             <div className="p-10 text-center text-sm text-gray-500">
               No users found.
             </div>
+
           ) : (
+
             <div className="divide-y divide-gray-800">
 
               {users.map((user) => {
-
-                const currentUser =
-                  JSON.parse(
-                    localStorage.getItem("user") || "null"
-                  );
 
                 const isCurrentUser =
                   currentUser &&
@@ -404,6 +525,7 @@ function AdminUsersPage() {
                           value={user.role}
                           disabled={
                             updatingUser === user._id ||
+                            deletingUser === user._id ||
                             isCurrentUser
                           }
                           onChange={(event) =>
@@ -414,6 +536,7 @@ function AdminUsersPage() {
                           }
                           className="rounded-xl border border-gray-700 bg-gray-950 px-4 py-2.5 text-sm text-gray-200 outline-none transition focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
                         >
+
                           <option value="member">
                             Member
                           </option>
@@ -425,12 +548,14 @@ function AdminUsersPage() {
                           <option value="admin">
                             Admin
                           </option>
+
                         </select>
 
                         <button
                           type="button"
                           disabled={
                             deletingUser === user._id ||
+                            updatingUser === user._id ||
                             isCurrentUser
                           }
                           onClick={() =>
@@ -452,7 +577,24 @@ function AdminUsersPage() {
               })}
 
             </div>
+
           )}
+
+        </div>
+
+        {/* =================================================
+            BACK TO ADMIN
+        ================================================= */}
+
+        <div className="mt-6">
+
+          <button
+            type="button"
+            onClick={() => navigate("/admin")}
+            className="rounded-xl border border-gray-700 px-5 py-3 text-sm font-semibold text-gray-300 transition hover:border-purple-500/40 hover:text-purple-400"
+          >
+            ← Back to Admin Dashboard
+          </button>
 
         </div>
 
