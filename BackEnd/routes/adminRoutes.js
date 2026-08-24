@@ -1,6 +1,7 @@
 import express from "express";
 
 import { authMiddleware } from "../middleware/authMiddleware.js";
+
 import adminMiddleware from "../middleware/adminMiddleware.js";
 
 import {
@@ -19,11 +20,11 @@ const router = express.Router();
 // =====================================================
 //
 // Every route below requires:
+//
 // 1. Valid JWT
 // 2. Admin role
 //
 // =====================================================
-
 
 // =====================================================
 // ADMIN STATISTICS
@@ -36,12 +37,12 @@ router.get(
   getAdminStats
 );
 
-
 // =====================================================
 // USER MANAGEMENT
 // =====================================================
 
 // Get all users
+
 router.get(
   "/users",
   authMiddleware,
@@ -49,8 +50,8 @@ router.get(
   getAllUsers
 );
 
-
 // Update user role
+
 router.patch(
   "/users/:id/role",
   authMiddleware,
@@ -58,8 +59,8 @@ router.patch(
   updateUserRole
 );
 
-
 // Delete user
+
 router.delete(
   "/users/:id",
   authMiddleware,
@@ -67,12 +68,12 @@ router.delete(
   deleteUser
 );
 
-
 // =====================================================
 // FEEDBACK MANAGEMENT
 // =====================================================
 
 // Get all feedback
+
 router.get(
   "/feedback",
   authMiddleware,
@@ -80,14 +81,13 @@ router.get(
   getAdminFeedback
 );
 
-
 // Delete feedback
+
 router.delete(
   "/feedback/:id",
   authMiddleware,
   adminMiddleware,
   deleteAdminFeedback
 );
-
 
 export default router;

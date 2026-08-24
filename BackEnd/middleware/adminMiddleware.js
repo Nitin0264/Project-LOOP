@@ -1,17 +1,35 @@
-const adminMiddleware = (req, res, next) => {
+const adminMiddleware = (
+  req,
+  res,
+  next
+) => {
+  // ===================================================
+  // AUTHENTICATION CHECK
+  // ===================================================
+
   if (!req.user) {
     return res.status(401).json({
       success: false,
-      message: "Authentication required.",
+      message:
+        "Authentication required.",
     });
   }
+
+  // ===================================================
+  // ADMIN ROLE CHECK
+  // ===================================================
 
   if (req.user.role !== "admin") {
     return res.status(403).json({
       success: false,
-      message: "Admin access required.",
+      message:
+        "Admin access required.",
     });
   }
+
+  // ===================================================
+  // AUTHORIZED
+  // ===================================================
 
   next();
 };

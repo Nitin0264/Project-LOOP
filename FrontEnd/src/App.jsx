@@ -2,117 +2,129 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 
-import Navbar from "./Components/Navbar";
-import ProtectedRoute from "./Components/ProtectedRoute";
+// =====================================================
+// PUBLIC PAGES
+// =====================================================
 
 import WelcomePage from "./Pages/WelcomePage";
+import InfoPage from "./Pages/InfoPage";
 import LoginPage from "./Pages/LoginPage";
 import RegisterPage from "./Pages/RegisterPage";
-import InfoPage from "./Pages/InfoPage";
-import DashboardPage from "./Pages/Dashboard";
+
+// =====================================================
+// PROTECTED PAGES
+// =====================================================
+
+import DashboardPage from "./Pages/DashboardPage";
 import FeedbackPage from "./Pages/FeedbackPage";
 import AddFeedbackPage from "./Pages/AddFeedbackPage";
-import EditFeedbackPage from "./Pages/EditFeedbackPage";
-import AskAI from "./pages/AskAI";
-import AnalyticsPage from "./pages/AnalyticsPage";
+import AnalyticsPage from "./Pages/AnalyticsPage";
+import AskAIPage from "./Pages/AskAI";
+import AdminPage from "./Pages/AdminPage";
 
-import AdminDashboard from "./Pages/AdminDashboard";
-import AdminUsersPage from "./Pages/AdminUsersPage";
+// =====================================================
+// COMPONENTS
+// =====================================================
+
+import ProtectedRoute from "./Components/ProtectedRoute";
+
+// =====================================================
+// APP
+// =====================================================
 
 function App() {
   return (
-    <>
-      <Navbar />
+    <Routes>
 
-      <Routes>
-        {/* =====================================================
-            PUBLIC ROUTES
-        ===================================================== */}
+      {/* =================================================
+          PUBLIC ROUTES
+      ================================================= */}
+
+      <Route
+        path="/"
+        element={<WelcomePage />}
+      />
+
+      <Route
+        path="/info"
+        element={<InfoPage />}
+      />
+
+      <Route
+        path="/login"
+        element={<LoginPage />}
+      />
+
+      <Route
+        path="/register"
+        element={<RegisterPage />}
+      />
+
+
+      {/* =================================================
+          PROTECTED USER ROUTES
+      ================================================= */}
+
+      <Route element={<ProtectedRoute />}>
 
         <Route
-          path="/"
-          element={<WelcomePage />}
+          path="/dashboard"
+          element={<DashboardPage />}
         />
 
         <Route
-          path="/login"
-          element={<LoginPage />}
+          path="/feedback"
+          element={<FeedbackPage />}
         />
 
         <Route
-          path="/register"
-          element={<RegisterPage />}
+          path="/add-feedback"
+          element={<AddFeedbackPage />}
         />
 
         <Route
-          path="/info"
-          element={<InfoPage />}
+          path="/analytics"
+          element={<AnalyticsPage />}
         />
 
-        {/* =====================================================
-            NORMAL PROTECTED ROUTES
-        ===================================================== */}
+        <Route
+          path="/ask-ai"
+          element={<AskAIPage />}
+        />
 
-        <Route element={<ProtectedRoute />}>
-          <Route
-            path="/dashboard"
-            element={<DashboardPage />}
+      </Route>
+
+
+      {/* =================================================
+          ADMIN ROUTES
+      ================================================= */}
+
+      <Route
+        element={
+          <ProtectedRoute
+            allowedRoles={["admin"]}
           />
-
-          <Route
-            path="/feedback"
-            element={<FeedbackPage />}
-          />
-
-          <Route
-            path="/add-feedback"
-            element={<AddFeedbackPage />}
-          />
-
-          <Route
-            path="/edit-feedback/:id"
-            element={<EditFeedbackPage />}
-          />
-
-          <Route
-            path="/ask-ai"
-            element={<AskAI />}
-          />
-
-          <Route
-            path="/analytics"
-            element={<AnalyticsPage />}
-          />
-        </Route>
-
-        {/* =====================================================
-            ADMIN ONLY ROUTES
-        ===================================================== */}
+        }
+      >
 
         <Route
-          element={
-            <ProtectedRoute
-              allowedRoles={["admin"]}
-            />
-          }
-        >
-          <Route
-            path="/admin"
-            element={<AdminDashboard />}
-          />
+          path="/admin"
+          element={<AdminPage />}
+        />
 
-          <Route
-            path="/admin/users"
-            element={<AdminUsersPage />}
-          />
+      </Route>
 
-          <Route
-            path="/admin/feedback"
-            element={<FeedbackPage />}
-          />
-        </Route>
-      </Routes>
-    </>
+
+      {/* =================================================
+          FALLBACK
+      ================================================= */}
+
+      <Route
+        path="*"
+        element={<WelcomePage />}
+      />
+
+    </Routes>
   );
 }
 
