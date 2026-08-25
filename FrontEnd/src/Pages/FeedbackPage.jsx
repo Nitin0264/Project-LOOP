@@ -2,10 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import api from "../services/api";
 
 function FeedbackPage() {
-  // =====================================================
-  // STATE
-  // =====================================================
-
   const [feedbacks, setFeedbacks] = useState([]);
 
   const [formData, setFormData] = useState({
@@ -41,7 +37,7 @@ function FeedbackPage() {
 
       console.log("Feedback response:", data);
 
-      if (data.status === 401) {
+      if (data.status === 401 || data.sessionExpired) {
         setError("Your session has expired. Please login again.");
         return;
       }
@@ -138,6 +134,11 @@ function FeedbackPage() {
       return;
     }
 
+    if (!formData.customerEmail.trim()) {
+      setError("Customer email is required.");
+      return;
+    }
+
     if (!formData.message.trim()) {
       setError("Feedback message is required.");
       return;
@@ -146,30 +147,21 @@ function FeedbackPage() {
     try {
       setLoading(true);
 
-      let data;
+      const payload = {
+        customerName: formData.customerName.trim(),
+        customerEmail: formData.customerEmail.trim(),
+        message: formData.message.trim(),
+        source: formData.source,
+      };
 
-      // -------------------------------------------------
-      // UPDATE
-      // -------------------------------------------------
+      let data;
 
       if (editingId) {
         data = await api(
           `/feedback/${editingId}`,
           {
             method: "PUT",
-            body: JSON.stringify({
-              customerName:
-                formData.customerName.trim(),
-
-              customerEmail:
-                formData.customerEmail.trim(),
-
-              message:
-                formData.message.trim(),
-
-              source:
-                formData.source,
-            }),
+            body: JSON.stringify(payload),
           }
         );
 
@@ -178,7 +170,7 @@ function FeedbackPage() {
           data
         );
 
-        if (data.status === 401) {
+        if (data.status === 401 || data.sessionExpired) {
           setError(
             "Your session has expired. Please login again."
           );
@@ -195,30 +187,12 @@ function FeedbackPage() {
         setMessage(
           "Feedback updated successfully. AI analysis has been refreshed if the message changed."
         );
-      }
-
-      // -------------------------------------------------
-      // CREATE
-      // -------------------------------------------------
-
-      else {
+      } else {
         data = await api(
           "/feedback",
           {
             method: "POST",
-            body: JSON.stringify({
-              customerName:
-                formData.customerName.trim(),
-
-              customerEmail:
-                formData.customerEmail.trim(),
-
-              message:
-                formData.message.trim(),
-
-              source:
-                formData.source,
-            }),
+            body: JSON.stringify(payload),
           }
         );
 
@@ -227,7 +201,7 @@ function FeedbackPage() {
           data
         );
 
-        if (data.status === 401) {
+        if (data.status === 401 || data.sessionExpired) {
           setError(
             "Your session has expired. Please login again."
           );
@@ -294,7 +268,7 @@ function FeedbackPage() {
         data
       );
 
-      if (data.status === 401) {
+      if (data.status === 401 || data.sessionExpired) {
         setError(
           "Your session has expired. Please login again."
         );
@@ -410,9 +384,7 @@ function FeedbackPage() {
     <div className="min-h-screen bg-gray-950 px-4 py-8 text-white sm:px-6 lg:px-10">
       <div className="mx-auto max-w-7xl">
 
-        {/* =================================================
-            HEADER
-        ================================================= */}
+        {/* HEADER */}
 
         <div className="mb-10">
           <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-blue-400">
@@ -444,9 +416,7 @@ function FeedbackPage() {
           </div>
         </div>
 
-        {/* =================================================
-            MESSAGES
-        ================================================= */}
+        {/* MESSAGES */}
 
         {message && (
           <div className="mb-6 rounded-xl border border-green-500/20 bg-green-500/10 px-5 py-4 text-sm text-green-400">
@@ -460,9 +430,7 @@ function FeedbackPage() {
           </div>
         )}
 
-        {/* =================================================
-            FORM
-        ================================================= */}
+        {/* FORM */}
 
         <div className="mb-10 rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-xl sm:p-8">
 
@@ -514,7 +482,7 @@ function FeedbackPage() {
                 />
               </div>
 
-              {/* EMAIL */}
+              {/* CUSTOMER EMAIL */}
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-300">
@@ -526,6 +494,7 @@ function FeedbackPage() {
                   name="customerEmail"
                   value={formData.customerEmail}
                   onChange={handleChange}
+                  required
                   placeholder="Enter customer email"
                   className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 text-white outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                 />
@@ -542,6 +511,7 @@ function FeedbackPage() {
                   name="source"
                   value={formData.source}
                   onChange={handleChange}
+                  required
                   className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 text-white outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                 >
                   <option value="website">
@@ -603,9 +573,7 @@ function FeedbackPage() {
           </form>
         </div>
 
-        {/* =================================================
-            FILTERS
-        ================================================= */}
+        {/* FILTERS */}
 
         <div className="mb-8 rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg">
 
@@ -737,9 +705,7 @@ function FeedbackPage() {
 
         </div>
 
-        {/* =================================================
-            FEEDBACK LIST
-        ================================================= */}
+        {/* FEEDBACK LIST */}
 
         <div>
 
@@ -983,4 +949,3 @@ function FeedbackPage() {
 }
 
 export default FeedbackPage;
-
