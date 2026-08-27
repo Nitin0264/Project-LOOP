@@ -622,24 +622,6 @@ Potential future enhancements include:
 
 ---
 
-# 📜 License
-
-Add your team's selected project license here.
-
-Example:
-
-```text
-MIT License
-```
-
-or:
-
-```text
-ISC License
-```
-
----
-
 # ⭐ Support
 
 If you find **LOOP** useful, consider giving the repository a ⭐.
