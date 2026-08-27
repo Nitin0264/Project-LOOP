@@ -6,7 +6,6 @@
 ![Responsive](https://img.shields.io/badge/Responsive-Yes-brightgreen)
 ![Status](https://img.shields.io/badge/Status-Final%20Frontend-success)
 ![API Ready](https://img.shields.io/badge/API-Integration%20Ready-blue)
-![Made with Love](https://img.shields.io/badge/Made%20with-%E2%9D%A4-red)
 
 A **production-style frontend** for **LOOP — AI Customer Feedback Intelligence Platform**.
 
